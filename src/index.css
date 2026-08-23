@@ -196,3 +196,8 @@ body::after {
   animation: pulse-glow 2s ease-in-out infinite;
   display: inline-block;
 }
+
+.hud-input option {
+  background: var(--color-panel);
+  color: var(--color-text-glow);
+}
