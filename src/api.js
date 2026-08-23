@@ -58,14 +58,14 @@ export async function getTasks(token, projectId) {
   return res.json()
 }
 
-export async function createTask(token, projectId, title) {
+export async function createTask(token, projectId, title, priority = "Medium", dueDate = null) {
   const res = await fetch(`${API_BASE}/projects/${projectId}/tasks`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ title }),
+    body: JSON.stringify({ title, priority, dueDate }),
   })
   if (!res.ok) {
     const text = await res.text()
@@ -74,14 +74,14 @@ export async function createTask(token, projectId, title) {
   return res.json()
 }
 
-export async function updateTask(token, taskId, title, isDone) {
+export async function updateTask(token, taskId, title, isDone, priority, dueDate) {
   const res = await fetch(`${API_BASE}/tasks/${taskId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ title, isDone }),
+    body: JSON.stringify({ title, isDone, priority, dueDate }),
   })
   if (!res.ok) throw new Error("Failed to update task")
 }
