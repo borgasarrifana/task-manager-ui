@@ -1,1 +1,198 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap');
+
+@theme {
+  --color-void: #030b0f;
+  --color-panel: #0a1620;
+  --color-panel-light: #0f202e;
+  --color-cyan: #00e5ff;
+  --color-cyan-dim: #0a8fa8;
+  --color-amber: #ffb020;
+  --color-text-glow: #eafcff;
+
+  --font-display: 'Orbitron', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+}
+
+body {
+  background: var(--color-void);
+  color: var(--color-text-glow);
+  font-family: var(--font-mono);
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Ambient scanline + grid backdrop */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(0, 229, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: linear-gradient(transparent 0%, rgba(0, 229, 255, 0.03) 50%, transparent 100%);
+  background-size: 100% 4px;
+  animation: scan 8s linear infinite;
+}
+
+@keyframes scan {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 100px; }
+}
+
+@keyframes ring-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ring-spin-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Corner-bracket HUD panel — the signature element */
+.hud-panel {
+  position: relative;
+  background: var(--color-panel);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  z-index: 2;
+}
+
+.hud-panel::before,
+.hud-panel::after,
+.hud-panel > .corner-tl,
+.hud-panel > .corner-br {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: var(--color-cyan);
+  z-index: 3;
+}
+
+.hud-panel::before {
+  top: -1px; left: -1px;
+  border-top: 2px solid var(--color-cyan);
+  border-left: 2px solid var(--color-cyan);
+}
+
+.hud-panel::after {
+  bottom: -1px; right: -1px;
+  border-bottom: 2px solid var(--color-cyan);
+  border-right: 2px solid var(--color-cyan);
+}
+
+.hud-title {
+  font-family: var(--font-display);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-cyan);
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
+}
+
+.hud-label {
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-cyan-dim);
+  font-size: 0.7rem;
+}
+
+.hud-input {
+  background: rgba(0, 229, 255, 0.05);
+  border: 1px solid var(--color-cyan-dim);
+  color: var(--color-text-glow);
+  font-family: var(--font-mono);
+  transition: all 0.2s;
+}
+
+.hud-input:focus {
+  outline: none;
+  border-color: var(--color-cyan);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
+  background: rgba(0, 229, 255, 0.08);
+}
+
+.hud-input::placeholder {
+  color: rgba(10, 143, 168, 0.6);
+}
+
+.hud-btn {
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid var(--color-cyan);
+  color: var(--color-cyan);
+  transition: all 0.2s;
+}
+
+.hud-btn:hover:not(:disabled) {
+  background: var(--color-cyan);
+  color: var(--color-void);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.5);
+}
+
+.hud-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.hud-btn-danger {
+  border-color: var(--color-amber);
+  color: var(--color-amber);
+}
+
+.hud-btn-danger:hover:not(:disabled) {
+  background: var(--color-amber);
+  color: var(--color-void);
+  box-shadow: 0 0 20px rgba(255, 176, 32, 0.5);
+}
+
+/* Rotating reactor ring — the signature ambient decoration */
+.reactor-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  pointer-events: none;
+}
+
+.reactor-ring-outer {
+  inset: -20px;
+  border-top: 2px solid var(--color-cyan);
+  border-right: 2px solid rgba(0, 229, 255, 0.3);
+  animation: ring-spin 12s linear infinite;
+}
+
+.reactor-ring-inner {
+  inset: -8px;
+  border-bottom: 2px solid var(--color-cyan-dim);
+  border-left: 2px solid rgba(10, 143, 168, 0.3);
+  animation: ring-spin-reverse 8s linear infinite;
+}
+
+.hud-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-cyan);
+  box-shadow: 0 0 6px var(--color-cyan);
+  animation: pulse-glow 2s ease-in-out infinite;
+  display: inline-block;
+}

@@ -16,7 +16,6 @@ function AuthForm({ onLoginSuccess }) {
     try {
       if (isRegister) {
         await register(username, password)
-        // After successful registration, log them in right away
         const data = await login(username, password)
         onLoginSuccess(data.token)
       } else {
@@ -31,46 +30,58 @@ function AuthForm({ onLoginSuccess }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
-        <h1 className="text-2xl font-bold mb-6 text-center">
-          {isRegister ? "Create an account" : "Sign in"}
+    <div className="min-h-screen flex items-center justify-center relative">
+      <div className="hud-panel p-8 w-full max-w-sm relative">
+        <div className="reactor-ring reactor-ring-outer" style={{ inset: '-24px', width: '48px', height: '48px', margin: '0 auto', position: 'relative', display: 'none' }}></div>
+
+        <div className="flex items-center justify-center mb-2">
+          <span className="hud-status-dot mr-2"></span>
+          <span className="hud-label">System {isRegister ? "Enrollment" : "Access"}</span>
+        </div>
+
+        <h1 className="hud-title text-2xl text-center mb-8">
+          {isRegister ? "New User" : "Sign In"}
         </h1>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div>
+            <label className="hud-label block mb-1">Username</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="hud-input w-full px-3 py-2"
+              required
+            />
+          </div>
+          <div>
+            <label className="hud-label block mb-1">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="hud-input w-full px-3 py-2"
+              required
+            />
+          </div>
 
-          {error && <p className="text-red-600 text-sm">{error}</p>}
+          {error && (
+            <p className="hud-label text-amber-400 border border-amber-500/40 bg-amber-500/10 px-3 py-2" style={{ color: '#ffb020' }}>
+              ⚠ {error}
+            </p>
+          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-blue-600 text-white rounded py-2 font-semibold hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? "Please wait..." : isRegister ? "Register" : "Login"}
+          <button type="submit" disabled={loading} className="hud-btn py-3 mt-2">
+            {loading ? "Authenticating..." : isRegister ? "Register" : "Initiate Login"}
           </button>
         </form>
 
-        <p className="text-center text-sm mt-4 text-gray-600">
-          {isRegister ? "Already have an account?" : "Don't have an account?"}{" "}
+        <p className="hud-label text-center mt-6">
+          {isRegister ? "Already registered?" : "No account?"}{" "}
           <button
             onClick={() => setIsRegister(!isRegister)}
-            className="text-blue-600 font-medium hover:underline"
+            className="text-cyan-400 underline"
+            style={{ color: '#00e5ff' }}
           >
             {isRegister ? "Sign in" : "Register"}
           </button>
