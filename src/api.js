@@ -1,4 +1,4 @@
-const API_BASE = "https://task-manager-api-f42w.onrender.com/api"
+const API_BASE = "https://task-manager-api-1-iusg.onrender.com/api"
 
 export async function register(username, password) {
   const res = await fetch(`${API_BASE}/auth/register`, {
