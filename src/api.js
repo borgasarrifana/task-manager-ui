@@ -93,3 +93,11 @@ export async function deleteTask(token, taskId) {
   })
   if (!res.ok) throw new Error("Failed to delete task")
 }
+
+export async function deleteProject(token, projectId) {
+  const res = await fetch(`${API_BASE}/projects/${projectId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error("Failed to delete project")
+}
