@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react"
 import { getTasks, createTask, updateTask, deleteTask } from "./api"
+import HudDatePicker from "./HudDatePicker.jsx"
 
 const PRIORITY_COLORS = {
   High: { color: "#ffb020", label: "High" },
@@ -18,6 +19,11 @@ function TaskList({ token, project, onBack }) {
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState("priority") // "priority" | "dueDate" | "created"
   const [filterPriority, setFilterPriority] = useState("All")
+  const [confirmDeleteTask, setConfirmDeleteTask] = useState(null)
+  const [editingTask, setEditingTask] = useState(null)
+  const [editTitle, setEditTitle] = useState("")
+  const [editPriority, setEditPriority] = useState("Medium")
+  const [editDueDate, setEditDueDate] = useState("")
 
   useEffect(() => {
     loadTasks()
@@ -58,12 +64,15 @@ function TaskList({ token, project, onBack }) {
     }
   }
 
-  async function handleDelete(taskId) {
+  async function handleConfirmDelete() {
+    if (!confirmDeleteTask) return
     try {
-      await deleteTask(token, taskId)
+      await deleteTask(token, confirmDeleteTask.id)
+      setConfirmDeleteTask(null)
       loadTasks()
     } catch (err) {
       setError(err.message)
+      setConfirmDeleteTask(null)
     }
   }
 
@@ -96,6 +105,25 @@ function TaskList({ token, project, onBack }) {
     return { text: date.toLocaleDateString(), isOverdue }
   }
 
+  function openEditModal(task) {
+    setEditingTask(task)
+    setEditTitle(task.title)
+    setEditPriority(task.priority)
+    setEditDueDate(task.dueDate ? task.dueDate.split("T")[0] : "")
+  }
+
+  async function handleSaveEdit(e) {
+    e.preventDefault()
+    if (!editTitle.trim()) return
+    try {
+      await updateTask(token, editingTask.id, editTitle, editingTask.isDone, editPriority, editDueDate || null)
+      setEditingTask(null)
+      loadTasks()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
   return (
     <div className="min-h-screen relative p-8">
       <div className="max-w-2xl mx-auto relative z-10">
@@ -109,7 +137,11 @@ function TaskList({ token, project, onBack }) {
         </div>
         <h1 className="hud-title text-3xl mb-6">{project.name}</h1>
 
-        <form onSubmit={handleCreate} className="hud-panel p-4 flex flex-col gap-3 mb-4">
+        <form
+          onSubmit={handleCreate}
+          className="hud-panel p-4 flex flex-col gap-3 mb-4"
+          style={{ position: 'relative', zIndex: 10 }}
+        >
           <input
             type="text"
             placeholder="NEW TASK OBJECTIVE"
@@ -118,21 +150,32 @@ function TaskList({ token, project, onBack }) {
             className="hud-input px-3 py-2"
           />
           <div className="flex gap-2">
-            <select
-              value={newTaskPriority}
-              onChange={(e) => setNewTaskPriority(e.target.value)}
-              className="hud-input px-3 py-2 flex-1"
-            >
-              <option value="Low">Low Priority</option>
-              <option value="Medium">Medium Priority</option>
-              <option value="High">High Priority</option>
-            </select>
-            <input
-              type="date"
-              value={newTaskDueDate}
-              onChange={(e) => setNewTaskDueDate(e.target.value)}
-              className="hud-input px-3 py-2 flex-1"
-            />
+            <div className="flex gap-2 flex-1">
+              {["Low", "Medium", "High"].map((level) => {
+                const isActive = newTaskPriority === level
+                const color = level === "High" ? "#ffb020" : level === "Medium" ? "#00e5ff" : "#0a8fa8"
+                return (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setNewTaskPriority(level)}
+                    className="flex-1 py-2 text-base transition"
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      letterSpacing: '0.05em',
+                      color: isActive ? '#030b0f' : color,
+                      background: isActive ? color : 'transparent',
+                      border: `1px solid ${color}`,
+                    }}
+                  >
+                    {level}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="flex-1 relative">
+              <HudDatePicker value={newTaskDueDate} onChange={setNewTaskDueDate} />
+            </div>
             <button type="submit" className="hud-btn px-4 py-2 whitespace-nowrap">
               Add
             </button>
@@ -153,19 +196,29 @@ function TaskList({ token, project, onBack }) {
               <option value="created">Newest</option>
             </select>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="hud-label">Filter:</span>
-            <select
-              value={filterPriority}
-              onChange={(e) => setFilterPriority(e.target.value)}
-              className="hud-input px-2 py-1 text-sm"
-              style={{ fontSize: '0.8rem' }}
-            >
-              <option value="All">All</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
-            </select>
+            {["All", "High", "Medium", "Low"].map((level) => {
+              const isActive = filterPriority === level
+              const color = level === "High" ? "#ffb020" : level === "Medium" ? "#00e5ff" : level === "Low" ? "#0a8fa8" : "#eafcff"
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => setFilterPriority(level)}
+                  className="px-2 py-0.5 text-xs transition"
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    letterSpacing: '0.05em',
+                    color: isActive ? '#030b0f' : color,
+                    background: isActive ? color : 'transparent',
+                    border: `1px solid ${color}`,
+                  }}
+                >
+                  {level}
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -180,7 +233,10 @@ function TaskList({ token, project, onBack }) {
         ) : visibleTasks.length === 0 ? (
           <p className="hud-label">No objectives match current filters.</p>
         ) : (
-          <ul className="flex flex-col gap-3">
+          <ul
+            className="flex flex-col gap-3 overflow-y-auto pr-1"
+            style={{ maxHeight: 'calc(100vh - 420px)' }}
+          >
             {visibleTasks.map((task) => {
               const priorityInfo = PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.Medium
               const due = formatDueDate(task.dueDate)
@@ -222,17 +278,115 @@ function TaskList({ token, project, onBack }) {
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={() => handleDelete(task.id)}
-                    className="hud-btn hud-btn-danger px-3 py-1 text-xs ml-3 shrink-0"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex gap-2 ml-3 shrink-0">
+                    <button
+                      onClick={() => openEditModal(task)}
+                      className="hud-btn px-3 py-1 text-xs"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteTask(task)}
+                      className="hud-btn hud-btn-danger px-3 py-1 text-xs"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </li>
               )
             })}
           </ul>
         )}
+        {confirmDeleteTask && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          style={{ background: 'rgba(3, 11, 15, 0.85)' }}
+        >
+          <div className="hud-panel p-6 max-w-sm w-full">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="hud-status-dot" style={{ background: '#ffb020', boxShadow: '0 0 6px #ffb020' }}></span>
+              <span className="hud-label" style={{ color: '#ffb020' }}>Confirmation Required</span>
+            </div>
+
+            <h2 className="hud-title text-lg mb-3">Delete task?</h2>
+
+            <p className="mb-6" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
+              "{confirmDeleteTask.title}" will be permanently removed. This cannot be undone.
+            </p>
+
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmDeleteTask(null)} className="hud-btn flex-1 py-2">
+                Cancel
+              </button>
+              <button onClick={handleConfirmDelete} className="hud-btn hud-btn-danger flex-1 py-2">
+                Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {editingTask && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          style={{ background: 'rgba(3, 11, 15, 0.85)' }}
+        >
+          <div className="hud-panel p-6 max-w-sm w-full" style={{ position: 'relative', zIndex: 10 }}>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="hud-status-dot"></span>
+              <span className="hud-label">Edit Objective</span>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="flex flex-col gap-4">
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="hud-input px-3 py-2 text-base"
+                required
+              />
+
+              <div className="flex gap-2">
+                {["Low", "Medium", "High"].map((level) => {
+                  const isActive = editPriority === level
+                  const color = level === "High" ? "#ffb020" : level === "Medium" ? "#00e5ff" : "#0a8fa8"
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => setEditPriority(level)}
+                      className="flex-1 py-2 text-base transition"
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        letterSpacing: '0.05em',
+                        color: isActive ? '#030b0f' : color,
+                        background: isActive ? color : 'transparent',
+                        border: `1px solid ${color}`,
+                      }}
+                    >
+                      {level}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <HudDatePicker value={editDueDate} onChange={setEditDueDate} />
+
+              <div className="flex gap-3 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingTask(null)}
+                  className="hud-btn flex-1 py-2"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="hud-btn flex-1 py-2">
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   )

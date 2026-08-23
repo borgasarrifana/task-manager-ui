@@ -17,10 +17,10 @@ function AuthForm({ onLoginSuccess }) {
       if (isRegister) {
         await register(username, password)
         const data = await login(username, password)
-        onLoginSuccess(data.token)
+        onLoginSuccess(data.token, username)
       } else {
         const data = await login(username, password)
-        onLoginSuccess(data.token)
+        onLoginSuccess(data.token, username)
       }
     } catch (err) {
       setError(err.message)
