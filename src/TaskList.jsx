@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { getTasks, createTask, updateTask, deleteTask } from "./api"
+import { getTasks, createTask, updateTask, deleteTask, completeProject, reopenProject } from "./api"
 import HudDatePicker from "./HudDatePicker.jsx"
 
 const PRIORITY_COLORS = {
@@ -10,7 +10,7 @@ const PRIORITY_COLORS = {
 
 const PRIORITY_ORDER = { High: 0, Medium: 1, Low: 2 }
 
-function TaskList({ token, project, onBack }) {
+function TaskList({ token, role, project, onBack }) {
   const [tasks, setTasks] = useState([])
   const [newTaskTitle, setNewTaskTitle] = useState("")
   const [newTaskPriority, setNewTaskPriority] = useState("Medium")
@@ -24,6 +24,9 @@ function TaskList({ token, project, onBack }) {
   const [editTitle, setEditTitle] = useState("")
   const [editPriority, setEditPriority] = useState("Medium")
   const [editDueDate, setEditDueDate] = useState("")
+  const [isCompleted, setIsCompleted] = useState(project.isCompleted)
+  const [completing, setCompleting] = useState(false)
+  const isAdmin = role === "Admin"
 
   useEffect(() => {
     loadTasks()
@@ -73,6 +76,31 @@ function TaskList({ token, project, onBack }) {
     } catch (err) {
       setError(err.message)
       setConfirmDeleteTask(null)
+    }
+  }
+
+  async function handleCompleteProject() {
+    setCompleting(true)
+    try {
+      await completeProject(token, project.id)
+      setIsCompleted(true)
+      loadTasks()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setCompleting(false)
+    }
+  }
+
+  async function handleReopenProject() {
+    setCompleting(true)
+    try {
+      await reopenProject(token, project.id)
+      setIsCompleted(false)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setCompleting(false)
     }
   }
 
@@ -127,60 +155,106 @@ function TaskList({ token, project, onBack }) {
   return (
     <div className="min-h-screen relative p-8">
       <div className="max-w-2xl mx-auto relative z-10">
-        <button onClick={onBack} className="hud-label mb-4" style={{ color: '#00e5ff' }}>
-          ← Return to Mission Control
-        </button>
-
-        <div className="flex items-center gap-2 mb-1">
-          <span className="hud-status-dot"></span>
-          <span className="hud-label">Active Project</span>
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={onBack} className="hud-label" style={{ color: '#00e5ff' }}>
+            ← Return to Mission Control
+          </button>
+          {isCompleted && (
+            <span
+              className="px-3 py-1 text-xs border"
+              style={{
+                fontFamily: 'var(--font-mono)',
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                color: 'var(--color-green)',
+                borderColor: 'var(--color-green)',
+                background: 'color-mix(in srgb, var(--color-green) 10%, transparent)',
+              }}
+            >
+              Complete
+            </span>
+          )}
         </div>
-        <h1 className="hud-title text-3xl mb-6">{project.name}</h1>
 
-        <form
-          onSubmit={handleCreate}
-          className="hud-panel p-4 flex flex-col gap-3 mb-4"
-          style={{ position: 'relative', zIndex: 10 }}
-        >
-          <input
-            type="text"
-            placeholder="NEW TASK OBJECTIVE"
-            value={newTaskTitle}
-            onChange={(e) => setNewTaskTitle(e.target.value)}
-            className="hud-input px-3 py-2"
-          />
-          <div className="flex gap-2">
-            <div className="flex gap-2 flex-1">
-              {["Low", "Medium", "High"].map((level) => {
-                const isActive = newTaskPriority === level
-                const color = level === "High" ? "#ffb020" : level === "Medium" ? "#00e5ff" : "#0a8fa8"
-                return (
-                  <button
-                    key={level}
-                    type="button"
-                    onClick={() => setNewTaskPriority(level)}
-                    className="flex-1 py-2 text-base transition"
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      letterSpacing: '0.05em',
-                      color: isActive ? '#030b0f' : color,
-                      background: isActive ? color : 'transparent',
-                      border: `1px solid ${color}`,
-                    }}
-                  >
-                    {level}
-                  </button>
-                )
-              })}
-            </div>
-            <div className="flex-1 relative">
-              <HudDatePicker value={newTaskDueDate} onChange={setNewTaskDueDate} />
-            </div>
-            <button type="submit" className="hud-btn px-4 py-2 whitespace-nowrap">
-              Add
-            </button>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <span className="hud-status-dot"></span>
+            <span className="hud-label">Active Project</span>
           </div>
-        </form>
+          {isAdmin && project.ownerUsername && (
+            <span className="hud-label" style={{ color: 'var(--color-cyan-dim)' }}>
+              Owner: {project.ownerUsername}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="hud-title text-3xl">{project.name}</h1>
+          {isCompleted ? (
+            <button
+              onClick={handleReopenProject}
+              disabled={completing}
+              className="hud-btn py-2 px-4 text-sm"
+            >
+              {completing ? "..." : "Open Project"}
+            </button>
+          ) : (
+            <button
+              onClick={handleCompleteProject}
+              disabled={completing}
+              className="hud-btn hud-btn-complete py-2 px-4 text-sm"
+            >
+              {completing ? "..." : "COMPLETE"}
+            </button>
+          )}
+        </div>
+
+        {!isCompleted && (
+          <form
+            onSubmit={handleCreate}
+            className="hud-panel p-4 flex flex-col gap-3 mb-4"
+            style={{ position: 'relative', zIndex: 10 }}
+          >
+            <input
+              type="text"
+              placeholder="NEW TASK OBJECTIVE"
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              className="hud-input px-3 py-2"
+            />
+            <div className="flex gap-2">
+              <div className="flex gap-2 flex-1">
+                {["Low", "Medium", "High"].map((level) => {
+                  const isActive = newTaskPriority === level
+                  const color = level === "High" ? "#ffb020" : level === "Medium" ? "#00e5ff" : "#0a8fa8"
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => setNewTaskPriority(level)}
+                      className="flex-1 py-2 text-base transition"
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        letterSpacing: '0.05em',
+                        color: isActive ? '#030b0f' : color,
+                        background: isActive ? color : 'transparent',
+                        border: `1px solid ${color}`,
+                      }}
+                    >
+                      {level}
+                    </button>
+                  )
+                })}
+              </div>
+              <div className="flex-1 relative">
+                <HudDatePicker value={newTaskDueDate} onChange={setNewTaskDueDate} />
+              </div>
+              <button type="submit" className="hud-btn px-4 py-2 whitespace-nowrap">
+                Add
+              </button>
+            </div>
+          </form>
+        )}
 
         <div className="hud-panel p-3 flex gap-4 mb-6 items-center flex-wrap">
           <div className="flex items-center gap-2">
@@ -250,6 +324,7 @@ function TaskList({ token, project, onBack }) {
                       type="checkbox"
                       checked={task.isDone}
                       onChange={() => handleToggleDone(task)}
+                      disabled={isCompleted}
                       className="w-4 h-4 accent-cyan-400"
                     />
                     <span
@@ -278,20 +353,22 @@ function TaskList({ token, project, onBack }) {
                       </span>
                     )}
                   </div>
-                  <div className="flex gap-2 ml-3 shrink-0">
-                    <button
-                      onClick={() => openEditModal(task)}
-                      className="hud-btn px-3 py-1 text-xs"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => setConfirmDeleteTask(task)}
-                      className="hud-btn hud-btn-danger px-3 py-1 text-xs"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  {!isCompleted && (
+                    <div className="flex gap-2 ml-3 shrink-0">
+                      <button
+                        onClick={() => openEditModal(task)}
+                        className="hud-btn px-3 py-1 text-xs"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteTask(task)}
+                        className="hud-btn hud-btn-delete px-3 py-1 text-xs"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </li>
               )
             })}
@@ -318,7 +395,7 @@ function TaskList({ token, project, onBack }) {
               <button onClick={() => setConfirmDeleteTask(null)} className="hud-btn flex-1 py-2">
                 Cancel
               </button>
-              <button onClick={handleConfirmDelete} className="hud-btn hud-btn-danger flex-1 py-2">
+              <button onClick={handleConfirmDelete} className="hud-btn hud-btn-delete flex-1 py-2">
                 Confirm Delete
               </button>
             </div>
@@ -392,4 +469,4 @@ function TaskList({ token, project, onBack }) {
   )
 }
 
-export default TaskList 
+export default TaskList

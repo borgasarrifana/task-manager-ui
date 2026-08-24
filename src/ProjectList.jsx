@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react"
 import { getProjects, createProject, getTasks, deleteProject } from "./api"
 
-function ProjectList({ token, onSelectProject }) {
+function ProjectList({ token, role, onSelectProject }) {
   const [projects, setProjects] = useState([])
   const [newProjectName, setNewProjectName] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
   const [confirmTarget, setConfirmTarget] = useState(null) // { project, taskCount }
   const [checkingProjectId, setCheckingProjectId] = useState(null)
+  const isAdmin = role === "Admin"
 
   useEffect(() => {
     loadProjects()
@@ -100,19 +101,43 @@ function ProjectList({ token, onSelectProject }) {
                 key={project.id}
                 className="hud-panel p-4 flex items-center justify-between"
               >
-                <span
+                <div
                   onClick={() => onSelectProject(project)}
-                  className="hud-title text-base cursor-pointer flex-1"
+                  className="flex-1 cursor-pointer"
                 >
-                  {project.name}
-                </span>
-                <button
-                  onClick={() => handleDeleteClick(project)}
-                  disabled={checkingProjectId === project.id}
-                  className="hud-btn hud-btn-danger px-3 py-1 text-xs ml-3"
-                >
-                  {checkingProjectId === project.id ? "..." : "Delete"}
-                </button>
+                  <span className="hud-title text-base">
+                    {project.name}
+                  </span>
+                  {isAdmin && project.ownerUsername && (
+                    <div className="hud-label mt-1" style={{ color: 'var(--color-cyan-dim)' }}>
+                      Owner: {project.ownerUsername}
+                    </div>
+                  )}
+                </div>
+
+                {project.isCompleted ? (
+                  <span
+                    className="px-3 py-1 text-xs ml-3 border"
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase',
+                      color: 'var(--color-green)',
+                      borderColor: 'var(--color-green)',
+                      background: 'color-mix(in srgb, var(--color-green) 10%, transparent)',
+                    }}
+                  >
+                    Complete
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => handleDeleteClick(project)}
+                    disabled={checkingProjectId === project.id}
+                    className="hud-btn hud-btn-delete px-3 py-1 text-xs ml-3"
+                  >
+                    {checkingProjectId === project.id ? "..." : "Delete"}
+                  </button>
+                )}
               </li>
             ))}
           </ul>
@@ -155,7 +180,7 @@ function ProjectList({ token, onSelectProject }) {
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="hud-btn hud-btn-danger flex-1 py-2"
+                className="hud-btn hud-btn-delete flex-1 py-2"
               >
                 Confirm Delete
               </button>

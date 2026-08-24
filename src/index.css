@@ -2,16 +2,60 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap');
 
 @theme {
+  /* Dark HUD (default) */
   --color-void: #030b0f;
   --color-panel: #0a1620;
   --color-panel-light: #0f202e;
   --color-cyan: #00e5ff;
   --color-cyan-dim: #0a8fa8;
   --color-amber: #ffb020;
+  --color-red: #ff3b3b;
+  --color-green: #39ff88;
   --color-text-glow: #eafcff;
 
   --font-display: 'Orbitron', sans-serif;
   --font-mono: 'Share Tech Mono', monospace;
+}
+
+/* Auto light mode: only applies when the user hasn't explicitly overridden via the toggle */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --color-void: #eef3f5;
+    --color-panel: #ffffff;
+    --color-panel-light: #e4edf1;
+    --color-cyan: #0089a3;
+    --color-cyan-dim: #4a7c8c;
+    --color-amber: #b8650a;
+    --color-red: #cc2b2b;
+    --color-green: #1f9d55;
+    --color-text-glow: #0a1620;
+  }
+}
+
+/* Explicit override: light (from toggle) */
+:root[data-theme="light"] {
+  --color-void: #eef3f5;
+  --color-panel: #ffffff;
+  --color-panel-light: #e4edf1;
+  --color-cyan: #0089a3;
+  --color-cyan-dim: #4a7c8c;
+  --color-amber: #b8650a;
+  --color-red: #cc2b2b;
+  --color-green: #1f9d55;
+  --color-text-glow: #0a1620;
+}
+
+/* Explicit override: dark (from toggle, in case system is light) */
+:root[data-theme="dark"] {
+  --color-void: #030b0f;
+  --color-panel: #0a1620;
+  --color-panel-light: #0f202e;
+  --color-cyan: #00e5ff;
+  --color-cyan-dim: #0a8fa8;
+  --color-amber: #ffb020;
+  --color-red: #ff3b3b;
+  --color-green: #39ff88;
+  --color-text-glow: #eafcff;
 }
 
 body {
@@ -20,6 +64,7 @@ body {
   font-family: var(--font-mono);
   min-height: 100vh;
   position: relative;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 /* Ambient scanline + grid backdrop */
@@ -30,8 +75,8 @@ body::before {
   pointer-events: none;
   z-index: 0;
   background-image:
-    linear-gradient(rgba(0, 229, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 229, 255, 0.04) 1px, transparent 1px);
+    linear-gradient(color-mix(in srgb, var(--color-cyan) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-cyan) 4%, transparent) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 
@@ -41,7 +86,7 @@ body::after {
   inset: 0;
   pointer-events: none;
   z-index: 1;
-  background: linear-gradient(transparent 0%, rgba(0, 229, 255, 0.03) 50%, transparent 100%);
+  background: linear-gradient(transparent 0%, color-mix(in srgb, var(--color-cyan) 3%, transparent) 50%, transparent 100%);
   background-size: 100% 4px;
   animation: scan 8s linear infinite;
 }
@@ -68,10 +113,12 @@ body::after {
 
 /* Corner-bracket HUD panel — the signature element */
 .hud-panel {
+  --panel-accent: var(--color-cyan);
   position: relative;
   background: var(--color-panel);
-  border: 1px solid rgba(0, 229, 255, 0.25);
+  border: 1px solid color-mix(in srgb, var(--panel-accent) 25%, transparent);
   z-index: 2;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .hud-panel::before,
@@ -82,20 +129,20 @@ body::after {
   position: absolute;
   width: 16px;
   height: 16px;
-  border-color: var(--color-cyan);
+  border-color: var(--panel-accent);
   z-index: 3;
 }
 
 .hud-panel::before {
   top: -1px; left: -1px;
-  border-top: 2px solid var(--color-cyan);
-  border-left: 2px solid var(--color-cyan);
+  border-top: 2px solid var(--panel-accent);
+  border-left: 2px solid var(--panel-accent);
 }
 
 .hud-panel::after {
   bottom: -1px; right: -1px;
-  border-bottom: 2px solid var(--color-cyan);
-  border-right: 2px solid var(--color-cyan);
+  border-bottom: 2px solid var(--panel-accent);
+  border-right: 2px solid var(--panel-accent);
 }
 
 .hud-title {
@@ -103,7 +150,7 @@ body::after {
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--color-cyan);
-  text-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--color-cyan) 60%, transparent);
 }
 
 .hud-label {
@@ -115,7 +162,7 @@ body::after {
 }
 
 .hud-input {
-  background: rgba(0, 229, 255, 0.05);
+  background: color-mix(in srgb, var(--color-cyan) 5%, transparent);
   border: 1px solid var(--color-cyan-dim);
   color: var(--color-text-glow);
   font-family: var(--font-mono);
@@ -125,19 +172,19 @@ body::after {
 .hud-input:focus {
   outline: none;
   border-color: var(--color-cyan);
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
-  background: rgba(0, 229, 255, 0.08);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--color-cyan) 30%, transparent);
+  background: color-mix(in srgb, var(--color-cyan) 8%, transparent);
 }
 
 .hud-input::placeholder {
-  color: rgba(10, 143, 168, 0.6);
+  color: color-mix(in srgb, var(--color-cyan-dim) 60%, transparent);
 }
 
 .hud-btn {
   font-family: var(--font-display);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  background: rgba(0, 229, 255, 0.1);
+  background: color-mix(in srgb, var(--color-cyan) 10%, transparent);
   border: 1px solid var(--color-cyan);
   color: var(--color-cyan);
   transition: all 0.2s;
@@ -146,7 +193,7 @@ body::after {
 .hud-btn:hover:not(:disabled) {
   background: var(--color-cyan);
   color: var(--color-void);
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.5);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--color-cyan) 50%, transparent);
 }
 
 .hud-btn:disabled {
@@ -154,6 +201,7 @@ body::after {
   cursor: not-allowed;
 }
 
+/* Amber — used for secondary warnings (e.g. Logout) */
 .hud-btn-danger {
   border-color: var(--color-amber);
   color: var(--color-amber);
@@ -162,7 +210,31 @@ body::after {
 .hud-btn-danger:hover:not(:disabled) {
   background: var(--color-amber);
   color: var(--color-void);
-  box-shadow: 0 0 20px rgba(255, 176, 32, 0.5);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--color-amber) 50%, transparent);
+}
+
+/* Red — reserved for destructive/delete actions */
+.hud-btn-delete {
+  border-color: var(--color-red);
+  color: var(--color-red);
+}
+
+.hud-btn-delete:hover:not(:disabled) {
+  background: var(--color-red);
+  color: var(--color-void);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--color-red) 50%, transparent);
+}
+
+/* Green — used for completing/reopening a project */
+.hud-btn-complete {
+  border-color: var(--color-green);
+  color: var(--color-green);
+}
+
+.hud-btn-complete:hover:not(:disabled) {
+  background: var(--color-green);
+  color: var(--color-void);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--color-green) 50%, transparent);
 }
 
 /* Rotating reactor ring — the signature ambient decoration */
@@ -176,14 +248,14 @@ body::after {
 .reactor-ring-outer {
   inset: -20px;
   border-top: 2px solid var(--color-cyan);
-  border-right: 2px solid rgba(0, 229, 255, 0.3);
+  border-right: 2px solid color-mix(in srgb, var(--color-cyan) 30%, transparent);
   animation: ring-spin 12s linear infinite;
 }
 
 .reactor-ring-inner {
   inset: -8px;
   border-bottom: 2px solid var(--color-cyan-dim);
-  border-left: 2px solid rgba(10, 143, 168, 0.3);
+  border-left: 2px solid color-mix(in srgb, var(--color-cyan-dim) 30%, transparent);
   animation: ring-spin-reverse 8s linear infinite;
 }
 

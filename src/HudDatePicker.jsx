@@ -62,10 +62,10 @@ function HudDatePicker({ value, onChange, placeholder = "SELECT DATE" }) {
         onClick={() => setOpen(!open)}
         className="hud-input px-3 py-2 w-full text-left flex items-center justify-between"
       >
-        <span style={{ color: value ? undefined : 'rgba(10,143,168,0.7)' }}>
+        <span style={{ color: value ? undefined : 'color-mix(in srgb, var(--color-cyan-dim) 70%, transparent)' }}>
           {value ? new Date(value + "T00:00:00").toLocaleDateString() : placeholder}
         </span>
-        <span style={{ color: '#00e5ff' }}>▾</span>
+        <span style={{ color: 'var(--color-cyan)' }}>▾</span>
       </button>
 
       {open && (
@@ -76,7 +76,7 @@ function HudDatePicker({ value, onChange, placeholder = "SELECT DATE" }) {
             top: 'calc(100% + 8px)',
             left: 0,
             width: '260px',
-            background: '#0a1620',
+            background: 'var(--color-panel)',
             zIndex: 100,
           }}
         >
@@ -85,7 +85,7 @@ function HudDatePicker({ value, onChange, placeholder = "SELECT DATE" }) {
               type="button"
               onClick={() => changeMonth(-1)}
               className="hud-label px-2"
-              style={{ color: '#00e5ff', fontSize: '1rem' }}
+              style={{ color: 'var(--color-cyan)', fontSize: '1rem' }}
             >
               ‹
             </button>
@@ -96,7 +96,7 @@ function HudDatePicker({ value, onChange, placeholder = "SELECT DATE" }) {
               type="button"
               onClick={() => changeMonth(1)}
               className="hud-label px-2"
-              style={{ color: '#00e5ff', fontSize: '1rem' }}
+              style={{ color: 'var(--color-cyan)', fontSize: '1rem' }}
             >
               ›
             </button>
@@ -126,9 +126,19 @@ function HudDatePicker({ value, onChange, placeholder = "SELECT DATE" }) {
                   className="text-center py-1 text-xs transition"
                   style={{
                     fontFamily: 'var(--font-mono)',
-                    background: isSelected ? '#00e5ff' : isToday ? 'rgba(0,229,255,0.15)' : 'transparent',
-                    color: isSelected ? '#030b0f' : isToday ? '#00e5ff' : '#eafcff',
-                    border: isToday && !isSelected ? '1px solid #00e5ff' : '1px solid transparent',
+                    background: isSelected
+                      ? 'var(--color-cyan)'
+                      : isToday
+                        ? 'color-mix(in srgb, var(--color-cyan) 15%, transparent)'
+                        : 'transparent',
+                    color: isSelected
+                      ? 'var(--color-void)'
+                      : isToday
+                        ? 'var(--color-cyan)'
+                        : 'var(--color-text-glow)',
+                    border: isToday && !isSelected
+                      ? '1px solid var(--color-cyan)'
+                      : '1px solid transparent',
                   }}
                 >
                   {day}
@@ -142,7 +152,10 @@ function HudDatePicker({ value, onChange, placeholder = "SELECT DATE" }) {
               type="button"
               onClick={() => { onChange(""); setOpen(false) }}
               className="hud-label w-full text-center mt-3 pt-2"
-              style={{ color: '#ffb020', borderTop: '1px solid rgba(0,229,255,0.15)' }}
+              style={{
+                color: 'var(--color-red)',
+                borderTop: '1px solid color-mix(in srgb, var(--color-cyan) 15%, transparent)',
+              }}
             >
               Clear Date
             </button>
