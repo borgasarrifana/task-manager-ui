@@ -8,17 +8,22 @@ function ProjectList({ token, role, onSelectProject }) {
   const [loading, setLoading] = useState(true)
   const [confirmTarget, setConfirmTarget] = useState(null) // { project, taskCount }
   const [checkingProjectId, setCheckingProjectId] = useState(null)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
   const isAdmin = role === "Admin"
 
   useEffect(() => {
     loadProjects()
-  }, [])
+  }, [page])
 
   async function loadProjects() {
     try {
       setLoading(true)
-      const data = await getProjects(token)
-      setProjects(data)
+      const data = await getProjects(token, page)
+      setProjects(data.items)
+      setTotalPages(data.totalPages)
+      setTotalCount(data.totalCount)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -41,8 +46,8 @@ function ProjectList({ token, role, onSelectProject }) {
   async function handleDeleteClick(project) {
     setCheckingProjectId(project.id)
     try {
-      const tasks = await getTasks(token, project.id)
-      setConfirmTarget({ project, taskCount: tasks.length })
+      const taskData = await getTasks(token, project.id, 1, 1)
+      setConfirmTarget({ project, taskCount: taskData.totalCount })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -55,7 +60,11 @@ function ProjectList({ token, role, onSelectProject }) {
     try {
       await deleteProject(token, confirmTarget.project.id)
       setConfirmTarget(null)
-      loadProjects()
+      if (projects.length === 1 && page > 1) {
+        setPage((p) => p - 1)
+      } else {
+        loadProjects()
+      }
     } catch (err) {
       setError(err.message)
       setConfirmTarget(null)
@@ -95,52 +104,76 @@ function ProjectList({ token, role, onSelectProject }) {
         ) : projects.length === 0 ? (
           <p className="hud-label">No active projects. Deploy one above.</p>
         ) : (
-          <ul className="flex flex-col gap-3">
-            {projects.map((project) => (
-              <li
-                key={project.id}
-                className="hud-panel p-4 flex items-center justify-between"
-              >
-                <div
-                  onClick={() => onSelectProject(project)}
-                  className="flex-1 cursor-pointer"
+          <>
+            <ul className="flex flex-col gap-3">
+              {projects.map((project) => (
+                <li
+                  key={project.id}
+                  className="hud-panel p-4 flex items-center justify-between"
                 >
-                  <span className="hud-title text-base">
-                    {project.name}
-                  </span>
-                  {isAdmin && project.ownerUsername && (
-                    <div className="hud-label mt-1" style={{ color: 'var(--color-cyan-dim)' }}>
-                      Owner: {project.ownerUsername}
-                    </div>
-                  )}
-                </div>
+                  <div
+                    onClick={() => onSelectProject(project)}
+                    className="flex-1 cursor-pointer"
+                  >
+                    <span className="hud-title text-base">
+                      {project.name}
+                    </span>
+                    {isAdmin && project.ownerUsername && (
+                      <div className="hud-label mt-1" style={{ color: 'var(--color-cyan-dim)' }}>
+                        Owner: {project.ownerUsername}
+                      </div>
+                    )}
+                  </div>
 
-                {project.isCompleted ? (
-                  <span
-                    className="px-3 py-1 text-xs ml-3 border"
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      letterSpacing: '0.05em',
-                      textTransform: 'uppercase',
-                      color: 'var(--color-green)',
-                      borderColor: 'var(--color-green)',
-                      background: 'color-mix(in srgb, var(--color-green) 10%, transparent)',
-                    }}
-                  >
-                    Complete
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => handleDeleteClick(project)}
-                    disabled={checkingProjectId === project.id}
-                    className="hud-btn hud-btn-delete px-3 py-1 text-xs ml-3"
-                  >
-                    {checkingProjectId === project.id ? "..." : "Delete"}
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
+                  {project.isCompleted ? (
+                    <span
+                      className="px-3 py-1 text-xs ml-3 border"
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                        color: 'var(--color-green)',
+                        borderColor: 'var(--color-green)',
+                        background: 'color-mix(in srgb, var(--color-green) 10%, transparent)',
+                      }}
+                    >
+                      Complete
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleDeleteClick(project)}
+                      disabled={checkingProjectId === project.id}
+                      className="hud-btn hud-btn-delete px-3 py-1 text-xs ml-3"
+                    >
+                      {checkingProjectId === project.id ? "..." : "Delete"}
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+
+            {totalPages > 1 && (
+              <div className="hud-panel p-3 flex items-center justify-between mt-4">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="hud-btn px-3 py-1 text-xs"
+                >
+                  ← Prev
+                </button>
+                <span className="hud-label">
+                  Page {page} of {totalPages} · {totalCount} total
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="hud-btn px-3 py-1 text-xs"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

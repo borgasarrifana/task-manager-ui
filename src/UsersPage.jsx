@@ -6,22 +6,25 @@ function UsersPage({ token, currentUsername }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [updatingId, setUpdatingId] = useState(null)
-
   const [editingId, setEditingId] = useState(null)
   const [editValue, setEditValue] = useState("")
-
   const [confirmTarget, setConfirmTarget] = useState(null) // { user, projectCount }
   const [checkingUserId, setCheckingUserId] = useState(null)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
 
   useEffect(() => {
     loadUsers()
-  }, [])
+  }, [page])
 
   async function loadUsers() {
     try {
       setLoading(true)
-      const data = await getUsers(token)
-      setUsers(data)
+      const data = await getUsers(token, page)
+      setUsers(data.items)
+      setTotalPages(data.totalPages)
+      setTotalCount(data.totalCount)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -90,8 +93,12 @@ function UsersPage({ token, currentUsername }) {
     if (!confirmTarget) return
     try {
       await deleteUser(token, confirmTarget.user.id)
-      setUsers((prev) => prev.filter((u) => u.id !== confirmTarget.user.id))
       setConfirmTarget(null)
+      if (users.length === 1 && page > 1) {
+        setPage((p) => p - 1)
+      } else {
+        loadUsers()
+      }
     } catch (err) {
       setError(err.message)
       setConfirmTarget(null)
@@ -174,7 +181,7 @@ function UsersPage({ token, currentUsername }) {
                         </div>
                       </div>
 
-                      <div className="flex gap-2 flex-shrink-0">
+                      <div className="flex gap-2 shrink-0">
                         <button
                           onClick={() => handleToggleRole(user)}
                           disabled={isBusy || isSelf}

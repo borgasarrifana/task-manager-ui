@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 import { getTasks, createTask, updateTask, deleteTask, completeProject, reopenProject } from "./api"
 import HudDatePicker from "./HudDatePicker.jsx"
 
@@ -7,8 +7,6 @@ const PRIORITY_COLORS = {
   Medium: { color: "#00e5ff", label: "Medium" },
   Low: { color: "#0a8fa8", label: "Low" },
 }
-
-const PRIORITY_ORDER = { High: 0, Medium: 1, Low: 2 }
 
 function TaskList({ token, role, project, onBack }) {
   const [tasks, setTasks] = useState([])
@@ -27,16 +25,21 @@ function TaskList({ token, role, project, onBack }) {
   const [isCompleted, setIsCompleted] = useState(project.isCompleted)
   const [completing, setCompleting] = useState(false)
   const isAdmin = role === "Admin"
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
 
   useEffect(() => {
     loadTasks()
-  }, [])
+  }, [page, filterPriority, sortBy])
 
   async function loadTasks() {
     try {
       setLoading(true)
-      const data = await getTasks(token, project.id)
-      setTasks(data)
+      const data = await getTasks(token, project.id, page, 10, filterPriority, sortBy)
+      setTasks(data.items)
+      setTotalPages(data.totalPages)
+      setTotalCount(data.totalCount)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -72,7 +75,11 @@ function TaskList({ token, role, project, onBack }) {
     try {
       await deleteTask(token, confirmDeleteTask.id)
       setConfirmDeleteTask(null)
-      loadTasks()
+      if (tasks.length === 1 && page > 1) {
+        setPage((p) => p - 1)
+      } else {
+        loadTasks()
+      }
     } catch (err) {
       setError(err.message)
       setConfirmDeleteTask(null)
@@ -104,28 +111,6 @@ function TaskList({ token, role, project, onBack }) {
     }
   }
 
-  const visibleTasks = useMemo(() => {
-    let result = [...tasks]
-
-    if (filterPriority !== "All") {
-      result = result.filter((t) => t.priority === filterPriority)
-    }
-
-    if (sortBy === "priority") {
-      result.sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
-    } else if (sortBy === "dueDate") {
-      result.sort((a, b) => {
-        if (!a.dueDate) return 1
-        if (!b.dueDate) return -1
-        return new Date(a.dueDate) - new Date(b.dueDate)
-      })
-    } else {
-      result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    }
-
-    return result
-  }, [tasks, sortBy, filterPriority])
-
   function formatDueDate(dueDate) {
     if (!dueDate) return null
     const date = new Date(dueDate)
@@ -153,7 +138,7 @@ function TaskList({ token, role, project, onBack }) {
   }
 
   return (
-    <div className="min-h-screen relative p-8">
+    <div className="min-h-screen relative p-4">
       <div className="max-w-2xl mx-auto relative z-10">
         <div className="flex items-center justify-between mb-4">
           <button onClick={onBack} className="hud-label" style={{ color: '#00e5ff' }}>
@@ -261,7 +246,10 @@ function TaskList({ token, role, project, onBack }) {
             <span className="hud-label">Sort:</span>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={(e) => {
+                setSortBy(e.target.value)
+                setPage(1)
+              }}
               className="hud-input px-2 py-1 text-sm"
               style={{ fontSize: '0.8rem' }}
             >
@@ -279,7 +267,10 @@ function TaskList({ token, role, project, onBack }) {
                 <button
                   key={level}
                   type="button"
-                  onClick={() => setFilterPriority(level)}
+                  onClick={() => {
+                    setFilterPriority(level)
+                    setPage(1)
+                  }}
                   className="px-2 py-0.5 text-xs transition"
                   style={{
                     fontFamily: 'var(--font-mono)',
@@ -304,166 +295,192 @@ function TaskList({ token, role, project, onBack }) {
 
         {loading ? (
           <p className="hud-label">Scanning...</p>
-        ) : visibleTasks.length === 0 ? (
+        ) : tasks.length === 0 ? (
           <p className="hud-label">No objectives match current filters.</p>
         ) : (
-          <ul
-            className="flex flex-col gap-3 overflow-y-auto pr-1"
-            style={{ maxHeight: 'calc(100vh - 420px)' }}
-          >
-            {visibleTasks.map((task) => {
-              const priorityInfo = PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.Medium
-              const due = formatDueDate(task.dueDate)
-              return (
-                <li
-                  key={task.id}
-                  className="hud-panel p-4 flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    <input
-                      type="checkbox"
-                      checked={task.isDone}
-                      onChange={() => handleToggleDone(task)}
-                      disabled={isCompleted}
-                      className="w-4 h-4 accent-cyan-400"
-                    />
-                    <span
-                      className="px-2 py-0.5 text-xs shrink-0"
-                      style={{
-                        fontFamily: 'var(--font-mono)',
-                        color: priorityInfo.color,
-                        border: `1px solid ${priorityInfo.color}`,
-                        letterSpacing: '0.05em',
-                      }}
-                    >
-                      {priorityInfo.label}
-                    </span>
-                    <span
-                      className={task.isDone ? "line-through opacity-40" : ""}
-                      style={{ fontFamily: 'var(--font-mono)' }}
-                    >
-                      {task.title}
-                    </span>
-                    {due && (
+          <>
+            <ul
+              className="flex flex-col gap-3 overflow-y-auto pr-1"
+              style={{ maxHeight: 'calc(100vh - 436px)', minHeight: 'calc(100vh - 436px)' }}
+            >
+              {tasks.map((task) => {
+                const priorityInfo = PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.Medium
+                const due = formatDueDate(task.dueDate)
+                return (
+                  <li
+                    key={task.id}
+                    className="hud-panel p-4 flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      <input
+                        type="checkbox"
+                        checked={task.isDone}
+                        onChange={() => handleToggleDone(task)}
+                        disabled={isCompleted}
+                        className="w-4 h-4 accent-cyan-400"
+                      />
                       <span
-                        className="hud-label shrink-0"
-                        style={{ color: due.isOverdue && !task.isDone ? '#ffb020' : undefined }}
+                        className="px-2 py-0.5 text-xs shrink-0"
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          color: priorityInfo.color,
+                          border: `1px solid ${priorityInfo.color}`,
+                          letterSpacing: '0.05em',
+                        }}
                       >
-                        {due.isOverdue && !task.isDone ? '⚠ ' : ''}{due.text}
+                        {priorityInfo.label}
                       </span>
-                    )}
-                  </div>
-                  {!isCompleted && (
-                    <div className="flex gap-2 ml-3 shrink-0">
-                      <button
-                        onClick={() => openEditModal(task)}
-                        className="hud-btn px-3 py-1 text-xs"
+                      <span
+                        className={task.isDone ? "line-through opacity-40" : ""}
+                        style={{ fontFamily: 'var(--font-mono)' }}
                       >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setConfirmDeleteTask(task)}
-                        className="hud-btn hud-btn-delete px-3 py-1 text-xs"
-                      >
-                        Delete
-                      </button>
+                        {task.title}
+                      </span>
+                      {due && (
+                        <span
+                          className="hud-label shrink-0"
+                          style={{ color: due.isOverdue && !task.isDone ? '#ffb020' : undefined }}
+                        >
+                          {due.isOverdue && !task.isDone ? '⚠ ' : ''}{due.text}
+                        </span>
+                      )}
                     </div>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
+                    {!isCompleted && (
+                      <div className="flex gap-2 ml-3 shrink-0">
+                        <button
+                          onClick={() => openEditModal(task)}
+                          className="hud-btn px-3 py-1 text-xs"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteTask(task)}
+                          className="hud-btn hud-btn-delete px-3 py-1 text-xs"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+
+            {totalPages > 1 && (
+              <div className="hud-panel p-3 flex items-center justify-between mt-4">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="hud-btn px-3 py-1 text-xs"
+                >
+                  ← Prev
+                </button>
+                <span className="hud-label">
+                  Page {page} of {totalPages} · {totalCount} total
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="hud-btn px-3 py-1 text-xs"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
         )}
+
         {confirmDeleteTask && (
-        <div
-          className="fixed inset-0 flex items-center justify-center z-50 p-4"
-          style={{ background: 'rgba(3, 11, 15, 0.85)' }}
-        >
-          <div className="hud-panel p-6 max-w-sm w-full">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="hud-status-dot" style={{ background: '#ffb020', boxShadow: '0 0 6px #ffb020' }}></span>
-              <span className="hud-label" style={{ color: '#ffb020' }}>Confirmation Required</span>
-            </div>
-
-            <h2 className="hud-title text-lg mb-3">Delete task?</h2>
-
-            <p className="mb-6" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
-              "{confirmDeleteTask.title}" will be permanently removed. This cannot be undone.
-            </p>
-
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmDeleteTask(null)} className="hud-btn flex-1 py-2">
-                Cancel
-              </button>
-              <button onClick={handleConfirmDelete} className="hud-btn hud-btn-delete flex-1 py-2">
-                Confirm Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {editingTask && (
-        <div
-          className="fixed inset-0 flex items-center justify-center z-50 p-4"
-          style={{ background: 'rgba(3, 11, 15, 0.85)' }}
-        >
-          <div className="hud-panel p-6 max-w-sm w-full" style={{ position: 'relative', zIndex: 10 }}>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="hud-status-dot"></span>
-              <span className="hud-label">Edit Objective</span>
-            </div>
-
-            <form onSubmit={handleSaveEdit} className="flex flex-col gap-4">
-              <input
-                type="text"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                className="hud-input px-3 py-2 text-base"
-                required
-              />
-
-              <div className="flex gap-2">
-                {["Low", "Medium", "High"].map((level) => {
-                  const isActive = editPriority === level
-                  const color = level === "High" ? "#ffb020" : level === "Medium" ? "#00e5ff" : "#0a8fa8"
-                  return (
-                    <button
-                      key={level}
-                      type="button"
-                      onClick={() => setEditPriority(level)}
-                      className="flex-1 py-2 text-base transition"
-                      style={{
-                        fontFamily: 'var(--font-mono)',
-                        letterSpacing: '0.05em',
-                        color: isActive ? '#030b0f' : color,
-                        background: isActive ? color : 'transparent',
-                        border: `1px solid ${color}`,
-                      }}
-                    >
-                      {level}
-                    </button>
-                  )
-                })}
+          <div
+            className="fixed inset-0 flex items-center justify-center z-50 p-4"
+            style={{ background: 'rgba(3, 11, 15, 0.85)' }}
+          >
+            <div className="hud-panel p-6 max-w-sm w-full">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="hud-status-dot" style={{ background: '#ffb020', boxShadow: '0 0 6px #ffb020' }}></span>
+                <span className="hud-label" style={{ color: '#ffb020' }}>Confirmation Required</span>
               </div>
 
-              <HudDatePicker value={editDueDate} onChange={setEditDueDate} />
+              <h2 className="hud-title text-lg mb-3">Delete task?</h2>
 
-              <div className="flex gap-3 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingTask(null)}
-                  className="hud-btn flex-1 py-2"
-                >
+              <p className="mb-6" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
+                "{confirmDeleteTask.title}" will be permanently removed. This cannot be undone.
+              </p>
+
+              <div className="flex gap-3">
+                <button onClick={() => setConfirmDeleteTask(null)} className="hud-btn flex-1 py-2">
                   Cancel
                 </button>
-                <button type="submit" className="hud-btn flex-1 py-2">
-                  Save Changes
+                <button onClick={handleConfirmDelete} className="hud-btn hud-btn-delete flex-1 py-2">
+                  Confirm Delete
                 </button>
               </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {editingTask && (
+          <div
+            className="fixed inset-0 flex items-center justify-center z-50 p-4"
+            style={{ background: 'rgba(3, 11, 15, 0.85)' }}
+          >
+            <div className="hud-panel p-6 max-w-sm w-full" style={{ position: 'relative', zIndex: 10 }}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="hud-status-dot"></span>
+                <span className="hud-label">Edit Objective</span>
+              </div>
+
+              <form onSubmit={handleSaveEdit} className="flex flex-col gap-4">
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="hud-input px-3 py-2 text-base"
+                  required
+                />
+
+                <div className="flex gap-2">
+                  {["Low", "Medium", "High"].map((level) => {
+                    const isActive = editPriority === level
+                    const color = level === "High" ? "#ffb020" : level === "Medium" ? "#00e5ff" : "#0a8fa8"
+                    return (
+                      <button
+                        key={level}
+                        type="button"
+                        onClick={() => setEditPriority(level)}
+                        className="flex-1 py-2 text-base transition"
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          letterSpacing: '0.05em',
+                          color: isActive ? '#030b0f' : color,
+                          background: isActive ? color : 'transparent',
+                          border: `1px solid ${color}`,
+                        }}
+                      >
+                        {level}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <HudDatePicker value={editDueDate} onChange={setEditDueDate} />
+
+                <div className="flex gap-3 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingTask(null)}
+                    className="hud-btn flex-1 py-2"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="hud-btn flex-1 py-2">
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

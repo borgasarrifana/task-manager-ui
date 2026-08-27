@@ -26,12 +26,12 @@ export async function login(username, password) {
   return res.json() // { token: "...", role: "..." }
 }
 
-export async function getProjects(token) {
-  const res = await fetch(`${API_BASE}/projects`, {
+export async function getProjects(token, page = 1, pageSize = 20) {
+  const res = await fetch(`${API_BASE}/projects?page=${page}&pageSize=${pageSize}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) throw new Error("Failed to load projects")
-  return res.json()
+  return res.json() // { items, page, pageSize, totalCount, totalPages }
 }
 
 export async function createProject(token, name) {
@@ -50,8 +50,15 @@ export async function createProject(token, name) {
   return res.json()
 }
 
-export async function getTasks(token, projectId) {
-  const res = await fetch(`${API_BASE}/projects/${projectId}/tasks`, {
+export async function getTasks(token, projectId, page = 1, pageSize = 10, priority = null, sortBy = null) {
+  const params = new URLSearchParams({ page, pageSize })
+  if (priority && priority !== "All") {
+    params.set("priority", priority)
+  }
+  if (sortBy) {
+    params.set("sortBy", sortBy)
+  }
+  const res = await fetch(`${API_BASE}/projects/${projectId}/tasks?${params}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) throw new Error("Failed to load tasks")
@@ -130,12 +137,12 @@ export async function reopenProject(token, projectId) {
   }
 }
 
-export async function getUsers(token) {
-  const res = await fetch(`${API_BASE}/users`, {
+export async function getUsers(token, page = 1, pageSize = 20) {
+  const res = await fetch(`${API_BASE}/users?page=${page}&pageSize=${pageSize}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) throw new Error("Failed to load users")
-  return res.json()
+  return res.json() // { items, page, pageSize, totalCount, totalPages }
 }
 
 export async function getUserProjects(token, userId) {
