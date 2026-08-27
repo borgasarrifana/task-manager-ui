@@ -8,25 +8,25 @@ function AuthForm({ onLoginSuccess }) {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setError("")
-    setLoading(true)
+    async function handleSubmit(e) {
+      e.preventDefault()
+      setError("")
+      setLoading(true)
 
-    try {
-      if (isRegister) {
-        await register(username, password)
-        const data = await login(username, password)
-        onLoginSuccess(data.token, username, data.role)
-      } else {
-        const data = await login(username, password)
-        onLoginSuccess(data.token, username, data.role)
+      try {
+        if (isRegister) {
+          await register(username, password)
+          const data = await login(username, password)
+          onLoginSuccess(data.token, data.refreshToken, username, data.role)
+        } else {
+          const data = await login(username, password)
+          onLoginSuccess(data.token, data.refreshToken, username, data.role)
+        }
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
       }
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
   }
 
   return (

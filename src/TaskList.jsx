@@ -366,27 +366,25 @@ function TaskList({ token, role, project, onBack }) {
               })}
             </ul>
 
-            {totalPages > 1 && (
-              <div className="hud-panel p-3 flex items-center justify-between mt-4">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="hud-btn px-3 py-1 text-xs"
-                >
-                  ← Prev
-                </button>
-                <span className="hud-label">
-                  Page {page} of {totalPages} · {totalCount} total
-                </span>
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="hud-btn px-3 py-1 text-xs"
-                >
-                  Next →
-                </button>
-              </div>
-            )}
+            <div className="hud-panel p-3 flex items-center justify-between mt-4">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="hud-btn px-3 py-1 text-xs"
+              >
+                ← Prev
+              </button>
+              <span className="hud-label">
+                Page {page} of {totalPages} · {totalCount} total
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="hud-btn px-3 py-1 text-xs"
+              >
+                Next →
+              </button>
+            </div>
           </>
         )}
 
