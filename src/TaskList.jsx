@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { getTasks, createTask, updateTask, deleteTask, completeProject, reopenProject } from "./api"
 import HudDatePicker from "./HudDatePicker.jsx"
+import Tooltip from "./Tooltip.jsx"
 
 const PRIORITY_COLORS = {
   High: { color: "#ffb020", label: "High" },
@@ -184,13 +185,20 @@ function TaskList({ token, role, project, onBack }) {
               {completing ? "..." : "Open Project"}
             </button>
           ) : (
-            <button
-              onClick={handleCompleteProject}
-              disabled={completing}
-              className="hud-btn hud-btn-complete py-2 px-4 text-sm"
+            <Tooltip
+              label="Marks the project done and locks all tasks from further changes"
+              position="right"
+              color="var(--color-green)"
+              wrap
             >
-              {completing ? "..." : "COMPLETE"}
-            </button>
+              <button
+                onClick={handleCompleteProject}
+                disabled={completing}
+                className="hud-btn hud-btn-complete py-2 px-4 text-sm"
+              >
+                {completing ? "..." : "COMPLETE"}
+              </button>
+            </Tooltip>
           )}
         </div>
 
@@ -312,13 +320,19 @@ function TaskList({ token, role, project, onBack }) {
                     className="hud-panel p-4 flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3 flex-1">
-                      <input
-                        type="checkbox"
-                        checked={task.isDone}
-                        onChange={() => handleToggleDone(task)}
-                        disabled={isCompleted}
-                        className="w-4 h-4 accent-cyan-400"
-                      />
+                      <Tooltip
+                        label={task.isDone ? "Mark incomplete" : "Complete"}
+                        position="right"
+                        color={task.isDone ? "var(--color-amber)" : "var(--color-green)"}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={task.isDone}
+                          onChange={() => handleToggleDone(task)}
+                          disabled={isCompleted}
+                          className="w-4 h-4 accent-cyan-400"
+                        />
+                      </Tooltip>
                       <span
                         className="px-2 py-0.5 text-xs shrink-0"
                         style={{
