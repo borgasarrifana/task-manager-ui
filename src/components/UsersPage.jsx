@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
-import { getUsers, getUserProjects, updateUserRole, updateUser, deleteUser } from "./api"
+import { getUsers, getUserProjects, updateUserRole, updateUser, deleteUser } from "../api"
+import HudFrame from "./HudFrame.jsx"
 
 function UsersPage({ token, currentUsername }) {
   const [users, setUsers] = useState([])
@@ -219,13 +220,19 @@ function UsersPage({ token, currentUsername }) {
           className="fixed inset-0 flex items-center justify-center z-50 p-4"
           style={{ background: 'rgba(3, 11, 15, 0.85)' }}
         >
-          <div className="hud-panel p-6 max-w-sm w-full">
+          <HudFrame
+              size="lg"
+              accent="var(--color-red)"
+              className="max-w-sm w-full"
+              bodyClassName="p-6"
+              style={{ zIndex: 10 }}
+          >
             <div className="flex items-center gap-2 mb-3">
               <span className="hud-status-dot" style={{ background: 'var(--color-amber)', boxShadow: '0 0 6px var(--color-amber)' }}></span>
               <span className="hud-label" style={{ color: 'var(--color-amber)' }}>Confirmation Required</span>
             </div>
 
-            <h2 className="hud-title text-lg mb-3">Delete "{confirmTarget.user.username}"?</h2>
+            <h2 className="hud-title hud-title-danger text-lg mb-3">Delete "{confirmTarget.user.username}"?</h2>
 
             {confirmTarget.projectCount > 0 ? (
               <p className="mb-6" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
@@ -255,7 +262,7 @@ function UsersPage({ token, currentUsername }) {
                 Confirm Delete
               </button>
             </div>
-          </div>
+          </HudFrame>
         </div>
       )}
     </div>

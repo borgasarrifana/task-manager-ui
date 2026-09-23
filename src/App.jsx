@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react"
-import AuthForm from "./AuthForm"
-import ProjectList from "./ProjectList"
-import TaskList from "./TaskList"
-import UsersPage from "./UsersPage"
-import Sidebar from "./Sidebar"
+import AuthForm from "./components/AuthForm"
+import ProjectList from "./components/ProjectList"
+import TaskList from "./components/TaskList"
+import UsersPage from "./components/UsersPage"
+import Sidebar from "./components/Sidebar"
 import { refreshAccessToken, logout as apiLogout, setSessionHandlers } from "./api"
 
 function App() {

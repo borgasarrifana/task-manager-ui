@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react"
-import { getTasks, createTask, updateTask, deleteTask, completeProject, reopenProject } from "./api"
+import { getTasks, createTask, updateTask, deleteTask, completeProject, reopenProject } from "../api.js"
 import HudDatePicker from "./HudDatePicker.jsx"
 import Tooltip from "./Tooltip.jsx"
+import HudFrame from "./HudFrame.jsx"
+import TickFrame from './TickFrame.jsx';
 
 const PRIORITY_COLORS = {
   High: { color: "#ffb020", label: "High" },
@@ -189,6 +191,7 @@ function TaskList({ token, role, project, onBack }) {
               label="Marks the project done and locks all tasks from further changes"
               position="right"
               color="var(--color-green)"
+              variant="frame"
               wrap
             >
               <button
@@ -242,9 +245,9 @@ function TaskList({ token, role, project, onBack }) {
               <div className="flex-1 relative">
                 <HudDatePicker value={newTaskDueDate} onChange={setNewTaskDueDate} />
               </div>
-              <button type="submit" className="hud-btn px-4 py-2 whitespace-nowrap">
+              <TickFrame type="submit" className="whitespace-nowrap">
                 Add
-              </button>
+              </TickFrame>
             </div>
           </form>
         )}
@@ -407,13 +410,19 @@ function TaskList({ token, role, project, onBack }) {
             className="fixed inset-0 flex items-center justify-center z-50 p-4"
             style={{ background: 'rgba(3, 11, 15, 0.85)' }}
           >
-            <div className="hud-panel p-6 max-w-sm w-full">
+            <HudFrame
+              size="lg"
+              accent="var(--color-red)"
+              className="max-w-sm w-full"
+              bodyClassName="p-6"
+              style={{ zIndex: 10 }}
+            >
               <div className="flex items-center gap-2 mb-3">
                 <span className="hud-status-dot" style={{ background: '#ffb020', boxShadow: '0 0 6px #ffb020' }}></span>
                 <span className="hud-label" style={{ color: '#ffb020' }}>Confirmation Required</span>
               </div>
 
-              <h2 className="hud-title text-lg mb-3">Delete task?</h2>
+              <h2 className="hud-title hud-title-danger text-lg mb-3">Delete task?</h2>
 
               <p className="mb-6" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
                 "{confirmDeleteTask.title}" will be permanently removed. This cannot be undone.
@@ -427,7 +436,7 @@ function TaskList({ token, role, project, onBack }) {
                   Confirm Delete
                 </button>
               </div>
-            </div>
+            </HudFrame>
           </div>
         )}
 
@@ -436,7 +445,12 @@ function TaskList({ token, role, project, onBack }) {
             className="fixed inset-0 flex items-center justify-center z-50 p-4"
             style={{ background: 'rgba(3, 11, 15, 0.85)' }}
           >
-            <div className="hud-panel p-6 max-w-sm w-full" style={{ position: 'relative', zIndex: 10 }}>
+            <HudFrame
+              size="lg"
+              className="max-w-sm w-full"
+              bodyClassName="p-6"
+              style={{ zIndex: 10 }}
+            >
               <div className="flex items-center gap-2 mb-3">
                 <span className="hud-status-dot"></span>
                 <span className="hud-label">Edit Objective</span>
@@ -490,7 +504,7 @@ function TaskList({ token, role, project, onBack }) {
                   </button>
                 </div>
               </form>
-            </div>
+            </HudFrame>
           </div>
         )}
       </div>

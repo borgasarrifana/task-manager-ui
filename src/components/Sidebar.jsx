@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { FolderKanban, ListChecks, LogOut, Sun, Moon, ChevronDown, Users as UsersIcon } from "lucide-react"
-import { useTheme } from "./hooks/useTheme"
+import { useTheme } from "../hooks/useTheme"
 
 function CollapsedTooltip({ label, color = 'var(--color-cyan)' }) {
   return (

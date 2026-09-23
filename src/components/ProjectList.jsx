@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
-import { getProjects, createProject, getTasks, deleteProject } from "./api"
+import { getProjects, createProject, getTasks, deleteProject } from "../api"
+import HudFrame from "./HudFrame.jsx"
 
 function ProjectList({ token, role, onSelectProject }) {
   const [projects, setProjects] = useState([])
@@ -182,13 +183,19 @@ function ProjectList({ token, role, onSelectProject }) {
           className="fixed inset-0 flex items-center justify-center z-50 p-4"
           style={{ background: 'rgba(3, 11, 15, 0.85)' }}
         >
-          <div className="hud-panel p-6 max-w-sm w-full">
+          <HudFrame
+              size="lg"
+              accent="var(--color-red)"
+              className="max-w-sm w-full"
+              bodyClassName="p-6"
+              style={{ zIndex: 10 }}
+          >
             <div className="flex items-center gap-2 mb-3">
               <span className="hud-status-dot" style={{ background: '#ffb020', boxShadow: '0 0 6px #ffb020' }}></span>
               <span className="hud-label" style={{ color: '#ffb020' }}>Confirmation Required</span>
             </div>
 
-            <h2 className="hud-title text-lg mb-3">Delete "{confirmTarget.project.name}"?</h2>
+            <h2 className="hud-title hud-title-danger text-lg mb-3">Delete "{confirmTarget.project.name}"?</h2>
 
             {confirmTarget.taskCount > 0 ? (
               <p className="mb-6" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
@@ -218,7 +225,7 @@ function ProjectList({ token, role, onSelectProject }) {
                 Confirm Delete
               </button>
             </div>
-          </div>
+          </HudFrame>
         </div>
       )}
     </div>

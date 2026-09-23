@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { login, register } from "./api"
+import { login, register } from "../api"
+import HudFrame from "./HudFrame.jsx"
 
 function AuthForm({ onLoginSuccess }) {
   const [isRegister, setIsRegister] = useState(false)
@@ -31,7 +32,12 @@ function AuthForm({ onLoginSuccess }) {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative">
-      <div className="hud-panel p-8 w-full max-w-sm relative">
+      <HudFrame
+              size="lg"
+              className="max-w-sm w-full"
+              bodyClassName="p-6"
+              style={{ zIndex: 10 }}
+      >
         <div className="reactor-ring reactor-ring-outer" style={{ inset: '-24px', width: '48px', height: '48px', margin: '0 auto', position: 'relative', display: 'none' }}></div>
 
         <div className="flex items-center justify-center mb-2">
@@ -86,7 +92,7 @@ function AuthForm({ onLoginSuccess }) {
             {isRegister ? "Sign in" : "Register"}
           </button>
         </p>
-      </div>
+      </HudFrame>
     </div>
   )
 }

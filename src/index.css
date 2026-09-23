@@ -154,6 +154,11 @@ body::after {
   text-shadow: 0 0 8px color-mix(in srgb, var(--color-cyan) 60%, transparent);
 }
 
+.hud-title-danger {
+  color: var(--color-red);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--color-red) 55%, transparent);
+}
+
 .hud-label {
   font-family: var(--font-mono);
   letter-spacing: 0.1em;
@@ -298,4 +303,178 @@ body::after {
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-cyan-dim) var(--color-void);
+}
+
+/* ============================
+   SVG-frame button — polygon border, gem corners
+   ============================ */
+.hud-btn-svgframe {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-cyan);
+  background: var(--color-panel);
+  padding: 0.5rem 1.25rem;
+  border: none;
+  cursor: pointer;
+}
+
+.hud-svgframe-border {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.hud-svgframe-border polygon {
+  fill: none;
+  stroke: var(--color-cyan);
+  stroke-width: 0.5;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--color-cyan) 60%, transparent));
+}
+
+.hud-btn-svgframe:hover:not(:disabled) .hud-svgframe-border polygon {
+  fill: var(--color-cyan);
+  fill-opacity: 0.12;
+}
+
+.hud-svgframe-label {
+  position: relative;
+  z-index: 1;
+}
+
+.hud-tick {
+  position: absolute;
+  height: 2px;
+  background: var(--color-cyan);
+  box-shadow: 0 0 4px var(--color-cyan);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.hud-tick.corner-tl { width: 12px; top: 5px; left: -3px; transform: rotate(135deg); }
+.hud-tick.corner-tr { width: 12px; top: 5px; right: -3px; transform: rotate(45deg); }
+.hud-tick.corner-bl { width: 12px; bottom: 5px; left: -3px; transform: rotate(45deg); }
+.hud-tick.corner-br { width: 12px; bottom: 5px; right: -3px; transform: rotate(135deg); }
+
+.hud-tick.top-tl { width: 6px; top: 0; left: 7px; }
+.hud-tick.top-tr { width: 6px; top: 0; right: 7px; }
+.hud-tick.top-bl { width: 6px; bottom: 0; left: 7px; }
+.hud-tick.top-br { width: 6px; bottom: 0; right: 7px; }
+
+.hud-tick.left  { width: 24px; left: -13px; top: 20px; transform: rotate(90deg); }
+.hud-tick.right { width: 24px; right: -13px; top: 20px; transform: rotate(90deg); }
+
+/* ── HUD clipped-corner frame (tooltips, modals) ──── */
+.hud-frame {
+  --frame-accent: var(--color-cyan);
+  --frame-cut: 9px;
+  --frame-border: 1.5px;
+  --frame-tri: 6px;
+  --frame-tri-inset: 3px;
+  --frame-tab-h: 4px;
+  --frame-tab-w: 38%;
+  --frame-glow: 6px;
+  position: relative;
+}
+
+.hud-frame--lg {
+  --frame-cut: 20px;
+  --frame-tri: 10px;
+  --frame-tri-inset: 6px;
+  --frame-tab-h: 6px;
+  --frame-tab-w: 34%;
+  --frame-glow: 16px;
+}
+
+/* shape + glow live on a background layer so content is never clipped */
+.hud-frame-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0 var(--frame-glow) color-mix(in srgb, var(--frame-accent) 35%, transparent));
+}
+
+.hud-frame-border {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: var(--frame-border);
+  background: linear-gradient(
+    180deg,
+    var(--frame-accent) 0%,
+    color-mix(in srgb, var(--frame-accent) 30%, var(--color-void)) 100%
+  );
+  clip-path: polygon(
+    var(--frame-cut) 0, 100% 0,
+    100% calc(100% - var(--frame-cut)),
+    calc(100% - var(--frame-cut)) 100%,
+    0 100%, 0 var(--frame-cut)
+  );
+}
+
+.hud-frame-fill {
+  --inner-cut: calc(var(--frame-cut) - var(--frame-border) * 0.414);
+  width: 100%;
+  height: 100%;
+  background: var(--color-panel);
+  clip-path: polygon(
+    var(--inner-cut) 0, 100% 0,
+    100% calc(100% - var(--inner-cut)),
+    calc(100% - var(--inner-cut)) 100%,
+    0 100%, 0 var(--inner-cut)
+  );
+}
+
+/* corner triangles, hypotenuse parallel to each chamfer */
+.hud-frame::before,
+.hud-frame::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  width: var(--frame-tri);
+  height: var(--frame-tri);
+  background: var(--frame-accent);
+  pointer-events: none;
+}
+
+.hud-frame::before {
+  top: calc(var(--frame-border) + var(--frame-tri-inset));
+  left: calc(var(--frame-border) + var(--frame-tri-inset));
+  clip-path: polygon(0 100%, 100% 100%, 100% 0);
+}
+
+.hud-frame::after {
+  bottom: calc(var(--frame-border) + var(--frame-tri-inset));
+  right: calc(var(--frame-border) + var(--frame-tri-inset));
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+/* raised tab on the top edge */
+.hud-frame-tab {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 50%;
+  width: var(--frame-tab-w);
+  height: var(--frame-tab-h);
+  transform: translateX(-50%);
+  background: var(--frame-accent);
+  clip-path: polygon(
+    0 0, 100% 0,
+    calc(100% - var(--frame-tab-h)) 100%,
+    var(--frame-tab-h) 100%
+  );
+  pointer-events: none;
+}
+
+.hud-frame-content {
+  position: relative;
+  z-index: 1;
 }
