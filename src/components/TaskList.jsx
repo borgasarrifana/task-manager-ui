@@ -393,7 +393,7 @@ function TaskList({ token, role, project, onBack }) {
           <>
             {/* Fixed-height scroll area on desktop; normal page scroll on mobile */}
             <ul
-              className="flex flex-col gap-3 pr-1 md:overflow-y-auto md:max-h-[var(--list-h)] md:min-h-[var(--list-h)]"
+            className="flex flex-col gap-3 pr-1 md:overflow-y-auto md:max-h-(--list-h) md:min-h-(--list-h)"
               style={{ '--list-h': `calc(100vh - ${listOffset}px)` }}
             >
               {tasks.map((task) => {
