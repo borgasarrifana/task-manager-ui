@@ -1,14 +1,19 @@
 import { useState, useEffect } from "react"
+import {
+  Pencil, Trash2, Plus, SlidersHorizontal,
+  SignalLow, SignalMedium, SignalHigh,
+} from "lucide-react"
 import { getTasks, createTask, updateTask, deleteTask, completeProject, reopenProject } from "../api.js"
 import HudDatePicker from "./HudDatePicker.jsx"
 import Tooltip from "./Tooltip.jsx"
 import HudFrame from "./HudFrame.jsx"
-import TickFrame from './TickFrame.jsx';
+import TickFrame from "./TickFrame.jsx"
+import { useIsMobile } from "../hooks/useMediaQuery"
 
-const PRIORITY_COLORS = {
-  High: { color: "#ffb020", label: "High" },
-  Medium: { color: "#00e5ff", label: "Medium" },
-  Low: { color: "#0a8fa8", label: "Low" },
+const PRIORITY_META = {
+  High: { color: "#ffb020", label: "High", icon: SignalHigh },
+  Medium: { color: "#00e5ff", label: "Medium", icon: SignalMedium },
+  Low: { color: "#0a8fa8", label: "Low", icon: SignalLow },
 }
 
 function TaskList({ token, role, project, onBack }) {
@@ -20,6 +25,7 @@ function TaskList({ token, role, project, onBack }) {
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState("priority") // "priority" | "dueDate" | "created"
   const [filterPriority, setFilterPriority] = useState("All")
+  const [showFilters, setShowFilters] = useState(false)
   const [confirmDeleteTask, setConfirmDeleteTask] = useState(null)
   const [editingTask, setEditingTask] = useState(null)
   const [editTitle, setEditTitle] = useState("")
@@ -31,6 +37,11 @@ function TaskList({ token, role, project, onBack }) {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+  const isMobile = useIsMobile()
+
+  const filtersActive = filterPriority !== "All" || sortBy !== "priority"
+  // Desktop list height: space left after header, form and (optional) filter panel
+  const listOffset = showFilters ? 436 : 360
 
   useEffect(() => {
     loadTasks()
@@ -140,16 +151,45 @@ function TaskList({ token, role, project, onBack }) {
     }
   }
 
+  const filterToggle = (
+    <button
+      type="button"
+      onClick={() => setShowFilters((s) => !s)}
+      className="hud-btn relative px-3 py-2 flex items-center justify-center shrink-0"
+      aria-label={showFilters ? "Hide sort and filter" : "Show sort and filter"}
+      aria-expanded={showFilters}
+      aria-controls="task-filters"
+      style={showFilters ? { background: 'color-mix(in srgb, var(--color-cyan) 25%, transparent)' } : undefined}
+    >
+      <SlidersHorizontal size={16} aria-hidden="true" />
+      {filtersActive && (
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: '-4px',
+            right: '-4px',
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            background: 'var(--color-amber)',
+            boxShadow: '0 0 6px var(--color-amber)',
+          }}
+        />
+      )}
+    </button>
+  )
+
   return (
     <div className="min-h-screen relative p-4">
       <div className="max-w-2xl mx-auto relative z-10">
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={onBack} className="hud-label" style={{ color: '#00e5ff' }}>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <button onClick={onBack} className="hud-label text-left" style={{ color: '#00e5ff' }}>
             ← Return to Mission Control
           </button>
           {isCompleted && (
             <span
-              className="px-3 py-1 text-xs border"
+              className="px-3 py-1 text-xs border shrink-0"
               style={{
                 fontFamily: 'var(--font-mono)',
                 letterSpacing: '0.05em',
@@ -164,32 +204,34 @@ function TaskList({ token, role, project, onBack }) {
           )}
         </div>
 
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center justify-between gap-3 mb-1">
           <div className="flex items-center gap-2">
             <span className="hud-status-dot"></span>
             <span className="hud-label">Active Project</span>
           </div>
           {isAdmin && project.ownerUsername && (
-            <span className="hud-label" style={{ color: 'var(--color-cyan-dim)' }}>
+            <span className="hud-label text-right" style={{ color: 'var(--color-cyan-dim)' }}>
               Owner: {project.ownerUsername}
             </span>
           )}
         </div>
 
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="hud-title text-3xl">{project.name}</h1>
+        <div className="flex items-start md:items-center justify-between gap-3 mb-6">
+          <h1 className="hud-title text-2xl md:text-3xl min-w-0" style={{ overflowWrap: 'anywhere' }}>
+            {project.name}
+          </h1>
           {isCompleted ? (
             <button
               onClick={handleReopenProject}
               disabled={completing}
-              className="hud-btn py-2 px-4 text-sm"
+              className="hud-btn py-2 px-4 text-sm whitespace-nowrap shrink-0"
             >
               {completing ? "..." : "Open Project"}
             </button>
           ) : (
             <Tooltip
               label="Marks the project done and locks all tasks from further changes"
-              position="right"
+              position={isMobile ? "left" : "right"}
               color="var(--color-green)"
               variant="frame"
               wrap
@@ -197,7 +239,7 @@ function TaskList({ token, role, project, onBack }) {
               <button
                 onClick={handleCompleteProject}
                 disabled={completing}
-                className="hud-btn hud-btn-complete py-2 px-4 text-sm"
+                className="hud-btn hud-btn-complete py-2 px-4 text-sm whitespace-nowrap"
               >
                 {completing ? "..." : "COMPLETE"}
               </button>
@@ -205,30 +247,35 @@ function TaskList({ token, role, project, onBack }) {
           )}
         </div>
 
-        {!isCompleted && (
+        {!isCompleted ? (
           <form
             onSubmit={handleCreate}
             className="hud-panel p-4 flex flex-col gap-3 mb-4"
             style={{ position: 'relative', zIndex: 10 }}
           >
-            <input
-              type="text"
-              placeholder="NEW TASK OBJECTIVE"
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
-              className="hud-input px-3 py-2"
-            />
             <div className="flex gap-2">
-              <div className="flex gap-2 flex-1">
+              <input
+                type="text"
+                placeholder="NEW TASK OBJECTIVE"
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                className="hud-input flex-1 min-w-0 px-3 py-2"
+              />
+              {filterToggle}
+            </div>
+
+            <div className="flex flex-col md:flex-row gap-2">
+              <div className="flex gap-2 md:flex-1">
                 {["Low", "Medium", "High"].map((level) => {
                   const isActive = newTaskPriority === level
-                  const color = level === "High" ? "#ffb020" : level === "Medium" ? "#00e5ff" : "#0a8fa8"
+                  const { color, icon: Icon } = PRIORITY_META[level]
                   return (
                     <button
                       key={level}
                       type="button"
                       onClick={() => setNewTaskPriority(level)}
-                      className="flex-1 py-2 text-base transition"
+                      aria-pressed={isActive}
+                      className="flex-1 py-2 text-base transition flex items-center justify-center"
                       style={{
                         fontFamily: 'var(--font-mono)',
                         letterSpacing: '0.05em',
@@ -237,66 +284,77 @@ function TaskList({ token, role, project, onBack }) {
                         border: `1px solid ${color}`,
                       }}
                     >
-                      {level}
+                      <Icon size={18} className="md:hidden" aria-hidden="true" />
+                      <span className="sr-only md:not-sr-only">{level}</span>
                     </button>
                   )
                 })}
               </div>
-              <div className="flex-1 relative">
-                <HudDatePicker value={newTaskDueDate} onChange={setNewTaskDueDate} />
+
+              {/* On desktop "contents" lets these join the row above, same as before */}
+              <div className="flex gap-2 md:contents">
+                <div className="flex-1 min-w-0 relative">
+                  <HudDatePicker value={newTaskDueDate} onChange={setNewTaskDueDate} />
+                </div>
+                <TickFrame type="submit" className="whitespace-nowrap">
+                  <Plus size={18} className="md:hidden" aria-hidden="true" />
+                  <span className="sr-only md:not-sr-only">Add</span>
+                </TickFrame>
               </div>
-              <TickFrame type="submit" className="whitespace-nowrap">
-                Add
-              </TickFrame>
             </div>
           </form>
+        ) : (
+          <div className="flex justify-end mb-4">{filterToggle}</div>
         )}
 
-        <div className="hud-panel p-3 flex gap-4 mb-6 items-center flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="hud-label">Sort:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => {
-                setSortBy(e.target.value)
-                setPage(1)
-              }}
-              className="hud-input px-2 py-1 text-sm"
-              style={{ fontSize: '0.8rem' }}
-            >
-              <option value="priority">Priority</option>
-              <option value="dueDate">Due Date</option>
-              <option value="created">Newest</option>
-            </select>
+        {showFilters && (
+          <div id="task-filters" className="hud-panel p-3 flex gap-4 mb-6 items-center flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="hud-label">Sort:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value)
+                  setPage(1)
+                }}
+                className="hud-input px-2 py-1 text-sm"
+                style={{ fontSize: '0.8rem' }}
+              >
+                <option value="priority">Priority</option>
+                <option value="dueDate">Due Date</option>
+                <option value="created">Newest</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="hud-label">Filter:</span>
+              {["All", "High", "Medium", "Low"].map((level) => {
+                const isActive = filterPriority === level
+                const color = level === "All" ? "#eafcff" : PRIORITY_META[level].color
+                return (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => {
+                      setFilterPriority(level)
+                      setPage(1)
+                    }}
+                    aria-pressed={isActive}
+                    className="px-2 py-0.5 text-xs transition"
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      letterSpacing: '0.05em',
+                      color: isActive ? '#030b0f' : color,
+                      background: isActive ? color : 'transparent',
+                      border: `1px solid ${color}`,
+                    }}
+                  >
+                    {level}
+                  </button>
+                )
+              })}
+            </div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="hud-label">Filter:</span>
-            {["All", "High", "Medium", "Low"].map((level) => {
-              const isActive = filterPriority === level
-              const color = level === "High" ? "#ffb020" : level === "Medium" ? "#00e5ff" : level === "Low" ? "#0a8fa8" : "#eafcff"
-              return (
-                <button
-                  key={level}
-                  type="button"
-                  onClick={() => {
-                    setFilterPriority(level)
-                    setPage(1)
-                  }}
-                  className="px-2 py-0.5 text-xs transition"
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    letterSpacing: '0.05em',
-                    color: isActive ? '#030b0f' : color,
-                    background: isActive ? color : 'transparent',
-                    border: `1px solid ${color}`,
-                  }}
-                >
-                  {level}
-                </button>
-              )
-            })}
-          </div>
-        </div>
+        )}
 
         {error && (
           <p className="hud-label px-3 py-2 mb-4 border" style={{ color: '#ffb020', borderColor: 'rgba(255,176,32,0.4)', background: 'rgba(255,176,32,0.1)' }}>
@@ -310,19 +368,22 @@ function TaskList({ token, role, project, onBack }) {
           <p className="hud-label">No objectives match current filters.</p>
         ) : (
           <>
+            {/* Fixed-height scroll area on desktop; normal page scroll on mobile */}
             <ul
-              className="flex flex-col gap-3 overflow-y-auto pr-1"
-              style={{ maxHeight: 'calc(100vh - 436px)', minHeight: 'calc(100vh - 436px)' }}
+              className="flex flex-col gap-3 pr-1 md:overflow-y-auto md:max-h-[var(--list-h)] md:min-h-[var(--list-h)]"
+              style={{ '--list-h': `calc(100vh - ${listOffset}px)` }}
             >
               {tasks.map((task) => {
-                const priorityInfo = PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.Medium
+                const priority = PRIORITY_META[task.priority] || PRIORITY_META.Medium
+                const PriorityIcon = priority.icon
                 const due = formatDueDate(task.dueDate)
+                const overdue = due && due.isOverdue && !task.isDone
                 return (
                   <li
                     key={task.id}
-                    className="hud-panel p-4 flex items-center justify-between"
+                    className="hud-panel p-3 md:p-4 flex items-start md:items-center justify-between gap-3"
                   >
-                    <div className="flex items-center gap-3 flex-1">
+                    <div className="flex items-start md:items-center gap-3 flex-1 min-w-0">
                       <Tooltip
                         label={task.isDone ? "Mark incomplete" : "Complete"}
                         position="right"
@@ -333,48 +394,59 @@ function TaskList({ token, role, project, onBack }) {
                           checked={task.isDone}
                           onChange={() => handleToggleDone(task)}
                           disabled={isCompleted}
-                          className="w-4 h-4 accent-cyan-400"
+                          className="w-4 h-4 accent-cyan-400 mt-1 md:mt-0"
                         />
                       </Tooltip>
-                      <span
-                        className="px-2 py-0.5 text-xs shrink-0"
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          color: priorityInfo.color,
-                          border: `1px solid ${priorityInfo.color}`,
-                          letterSpacing: '0.05em',
-                        }}
-                      >
-                        {priorityInfo.label}
-                      </span>
-                      <span
-                        className={task.isDone ? "line-through opacity-40" : ""}
-                        style={{ fontFamily: 'var(--font-mono)' }}
-                      >
-                        {task.title}
-                      </span>
-                      {due && (
+
+                      {/* Mobile: title on its own line, meta below. Desktop: badge · title · date in one row */}
+                      <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-3 flex-1 min-w-0">
                         <span
-                          className="hud-label shrink-0"
-                          style={{ color: due.isOverdue && !task.isDone ? '#ffb020' : undefined }}
+                          className={`order-1 md:order-2 ${task.isDone ? "line-through opacity-40" : ""}`}
+                          style={{ fontFamily: 'var(--font-mono)', overflowWrap: 'anywhere' }}
                         >
-                          {due.isOverdue && !task.isDone ? '⚠ ' : ''}{due.text}
+                          {task.title}
                         </span>
-                      )}
+
+                        <div className="order-2 flex items-center gap-2 flex-wrap md:contents">
+                          <span
+                            className="md:order-1 inline-flex items-center px-2 py-0.5 text-xs shrink-0"
+                            style={{
+                              fontFamily: 'var(--font-mono)',
+                              color: priority.color,
+                              border: `1px solid ${priority.color}`,
+                              letterSpacing: '0.05em',
+                            }}
+                          >
+                            <PriorityIcon size={14} className="md:hidden" aria-hidden="true" />
+                            <span className="sr-only md:not-sr-only">{priority.label}</span>
+                          </span>
+                          {due && (
+                            <span
+                              className="md:order-3 hud-label shrink-0"
+                              style={{ color: overdue ? '#ffb020' : undefined }}
+                            >
+                              {overdue ? '⚠ ' : ''}{due.text}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
+
                     {!isCompleted && (
-                      <div className="flex gap-2 ml-3 shrink-0">
+                      <div className="flex gap-2 shrink-0">
                         <button
                           onClick={() => openEditModal(task)}
-                          className="hud-btn px-3 py-1 text-xs"
+                          className="hud-btn p-2 md:px-3 md:py-1 text-xs flex items-center justify-center"
                         >
-                          Edit
+                          <Pencil size={14} className="md:hidden" aria-hidden="true" />
+                          <span className="sr-only md:not-sr-only">Edit</span>
                         </button>
                         <button
                           onClick={() => setConfirmDeleteTask(task)}
-                          className="hud-btn hud-btn-delete px-3 py-1 text-xs"
+                          className="hud-btn hud-btn-delete p-2 md:px-3 md:py-1 text-xs flex items-center justify-center"
                         >
-                          Delete
+                          <Trash2 size={14} className="md:hidden" aria-hidden="true" />
+                          <span className="sr-only md:not-sr-only">Delete</span>
                         </button>
                       </div>
                     )}
@@ -383,23 +455,26 @@ function TaskList({ token, role, project, onBack }) {
               })}
             </ul>
 
-            <div className="hud-panel p-3 flex items-center justify-between mt-4">
+            <div className="hud-panel p-3 flex items-center justify-between gap-2 mt-4">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
                 className="hud-btn px-3 py-1 text-xs"
+                aria-label="Previous page"
               >
-                ← Prev
+                ←<span className="hidden sm:inline"> Prev</span>
               </button>
-              <span className="hud-label">
-                Page {page} of {totalPages} · {totalCount} total
+              <span className="hud-label text-center">
+                Page {page} of {totalPages}
+                <span className="hidden sm:inline"> · {totalCount} total</span>
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
                 className="hud-btn px-3 py-1 text-xs"
+                aria-label="Next page"
               >
-                Next →
+                <span className="hidden sm:inline">Next </span>→
               </button>
             </div>
           </>
@@ -424,15 +499,16 @@ function TaskList({ token, role, project, onBack }) {
 
               <h2 className="hud-title hud-title-danger text-lg mb-3">Delete task?</h2>
 
-              <p className="mb-6" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
+              <p className="mb-6" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem', overflowWrap: 'anywhere' }}>
                 "{confirmDeleteTask.title}" will be permanently removed. This cannot be undone.
               </p>
 
-              <div className="flex gap-3">
-                <button onClick={() => setConfirmDeleteTask(null)} className="hud-btn flex-1 py-2">
+              {/* Stacked on narrow screens (Confirm on top), side by side from sm up */}
+              <div className="flex flex-col-reverse sm:flex-row gap-3">
+                <button onClick={() => setConfirmDeleteTask(null)} className="hud-btn flex-auto whitespace-nowrap py-2">
                   Cancel
                 </button>
-                <button onClick={handleConfirmDelete} className="hud-btn hud-btn-delete flex-1 py-2">
+                <button onClick={handleConfirmDelete} className="hud-btn hud-btn-delete flex-auto whitespace-nowrap py-2">
                   Confirm Delete
                 </button>
               </div>
@@ -468,12 +544,13 @@ function TaskList({ token, role, project, onBack }) {
                 <div className="flex gap-2">
                   {["Low", "Medium", "High"].map((level) => {
                     const isActive = editPriority === level
-                    const color = level === "High" ? "#ffb020" : level === "Medium" ? "#00e5ff" : "#0a8fa8"
+                    const { color } = PRIORITY_META[level]
                     return (
                       <button
                         key={level}
                         type="button"
                         onClick={() => setEditPriority(level)}
+                        aria-pressed={isActive}
                         className="flex-1 py-2 text-base transition"
                         style={{
                           fontFamily: 'var(--font-mono)',

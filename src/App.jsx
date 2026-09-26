@@ -1,18 +1,23 @@
 import { useState, useEffect } from "react"
+import { Menu } from "lucide-react"
 import AuthForm from "./components/AuthForm"
+import DashboardPage from "./components/DashboardPage"
 import ProjectList from "./components/ProjectList"
 import TaskList from "./components/TaskList"
 import UsersPage from "./components/UsersPage"
 import Sidebar from "./components/Sidebar"
+import { useIsMobile } from "./hooks/useMediaQuery"
 import { refreshAccessToken, logout as apiLogout, setSessionHandlers } from "./api"
 
 function App() {
   const [token, setToken] = useState(null)
   const [username, setUsername] = useState(null)
   const [role, setRole] = useState(null)
+  const [view, setView] = useState("dashboard") // "dashboard" | "projects" | "users"
   const [selectedProject, setSelectedProject] = useState(null)
-  const [showUsers, setShowUsers] = useState(false)
   const [restoring, setRestoring] = useState(true)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     setSessionHandlers({
@@ -53,12 +58,30 @@ function App() {
     restoreSession()
   }, [])
 
+  // Close the drawer when resizing up to desktop
+  useEffect(() => {
+    if (!isMobile) setMobileNavOpen(false)
+  }, [isMobile])
+
+  // Esc closes the drawer; lock page scroll while it's open
+  useEffect(() => {
+    if (!mobileNavOpen) return
+    const onKey = (e) => e.key === "Escape" && setMobileNavOpen(false)
+    document.addEventListener("keydown", onKey)
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.removeEventListener("keydown", onKey)
+      document.body.style.overflow = ""
+    }
+  }, [mobileNavOpen])
+
   function clearSession() {
     setToken(null)
     setUsername(null)
     setRole(null)
+    setView("dashboard")
     setSelectedProject(null)
-    setShowUsers(false)
+    setMobileNavOpen(false)
     localStorage.removeItem("token")
     localStorage.removeItem("refreshToken")
     localStorage.removeItem("username")
@@ -69,6 +92,7 @@ function App() {
     setToken(newToken)
     setUsername(newUsername)
     setRole(newRole)
+    setView("dashboard")
     localStorage.setItem("token", newToken)
     localStorage.setItem("refreshToken", newRefreshToken)
     localStorage.setItem("username", newUsername)
@@ -83,14 +107,9 @@ function App() {
     clearSession()
   }
 
-  function handleGoHome() {
+  function showView(nextView) {
     setSelectedProject(null)
-    setShowUsers(false)
-  }
-
-  function handleShowUsers() {
-    setSelectedProject(null)
-    setShowUsers(true)
+    setView(nextView)
   }
 
   if (restoring) {
@@ -105,29 +124,72 @@ function App() {
     return <AuthForm onLoginSuccess={handleLoginSuccess} />
   }
 
-  return (
-    <div>
-      <Sidebar
-        username={username}
-        role={role}
-        onLogout={handleLogout}
-        selectedProject={selectedProject}
-        onGoHome={handleGoHome}
-        showUsers={showUsers}
-        onShowUsers={handleShowUsers}
-      />
-      {showUsers ? (
-        <UsersPage token={token} currentUsername={username} />
-      ) : !selectedProject ? (
-        <ProjectList token={token} role={role} onSelectProject={setSelectedProject} />
-      ) : (
+  function renderPage() {
+    if (selectedProject) {
+      return (
         <TaskList
           token={token}
           role={role}
           project={selectedProject}
           onBack={() => setSelectedProject(null)}
         />
-      )}
+      )
+    }
+    if (view === "users") {
+      return <UsersPage token={token} currentUsername={username} />
+    }
+    if (view === "projects") {
+      return <ProjectList token={token} role={role} onSelectProject={setSelectedProject} />
+    }
+    return (
+      <DashboardPage
+        token={token}
+        role={role}
+        onOpenProject={setSelectedProject}
+        onShowProjects={() => showView("projects")}
+      />
+    )
+  }
+
+  return (
+    <div>
+      {/* Mobile top bar */}
+      <header
+        className="md:hidden fixed top-0 inset-x-0 h-14 flex items-center gap-3 px-4"
+        style={{
+          zIndex: 30,
+          background: "var(--color-panel)",
+          borderBottom: "1px solid color-mix(in srgb, var(--color-cyan) 25%, transparent)",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setMobileNavOpen(true)}
+          className="hud-btn p-2 flex items-center justify-center"
+          aria-label="Open navigation"
+          aria-expanded={mobileNavOpen}
+          aria-controls="app-sidebar"
+        >
+          <Menu size={18} aria-hidden="true" />
+        </button>
+        <span className="hud-title text-sm">Task Manager</span>
+      </header>
+
+      <Sidebar
+        username={username}
+        role={role}
+        onLogout={handleLogout}
+        selectedProject={selectedProject}
+        currentView={view}
+        onShowDashboard={() => showView("dashboard")}
+        onGoHome={() => showView("projects")}
+        showUsers={view === "users"}
+        onShowUsers={() => showView("users")}
+        mobileOpen={mobileNavOpen}
+        onCloseMobile={() => setMobileNavOpen(false)}
+      />
+
+      <main className="pt-14 md:pt-0">{renderPage()}</main>
     </div>
   )
 }

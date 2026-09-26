@@ -100,6 +100,14 @@ export async function logout(refreshToken) {
   })
 }
 
+// --- Dashboard ---------------------------------------------------------
+
+export async function getDashboard(token) {
+  const res = await authorizedFetch(`${API_BASE}/dashboard`, {}, token)
+  if (!res.ok) throw new Error("Failed to load dashboard")
+  return res.json()
+}
+
 // --- Projects ---------------------------------------------------------
 
 export async function getProjects(token, page = 1, pageSize = 20) {

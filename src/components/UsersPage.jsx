@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { ChevronsUp, ChevronsDown, Pencil, Trash2, Check, X } from "lucide-react"
 import { getUsers, getUserProjects, updateUserRole, updateUser, deleteUser } from "../api"
 import HudFrame from "./HudFrame.jsx"
 
@@ -106,14 +107,17 @@ function UsersPage({ token, currentUsername }) {
     }
   }
 
+  // Shared sizing: square icon button on mobile, text button from md up
+  const actionBtn = "hud-btn p-2 md:px-3 md:py-1 text-xs flex items-center justify-center"
+
   return (
-    <div className="min-h-screen relative p-8">
+    <div className="min-h-screen relative p-4 md:p-8">
       <div className="max-w-2xl mx-auto relative z-10">
         <div className="flex items-center gap-2 mb-1">
           <span className="hud-status-dot"></span>
           <span className="hud-label">Access Control</span>
         </div>
-        <h1 className="hud-title text-3xl mb-6">Users</h1>
+        <h1 className="hud-title text-2xl md:text-3xl mb-6">Users</h1>
 
         {error && (
           <p
@@ -133,85 +137,136 @@ function UsersPage({ token, currentUsername }) {
         ) : users.length === 0 ? (
           <p className="hud-label">No users found.</p>
         ) : (
-          <ul className="flex flex-col gap-3">
-            {users.map((user) => {
-              const isSelf = user.username === currentUsername
-              const isAdmin = user.role === "Admin"
-              const isEditing = editingId === user.id
-              const isBusy = updatingId === user.id
+          <>
+            <ul className="flex flex-col gap-3">
+              {users.map((user) => {
+                const isSelf = user.username === currentUsername
+                const isAdmin = user.role === "Admin"
+                const isEditing = editingId === user.id
+                const isBusy = updatingId === user.id
+                const RoleIcon = isAdmin ? ChevronsDown : ChevronsUp
+                const roleLabel = isAdmin ? "Demote" : "Promote"
 
-              return (
-                <li
-                  key={user.id}
-                  className="hud-panel p-4 flex items-center justify-between gap-3"
-                >
-                  {isEditing ? (
-                    <>
-                      <input
-                        type="text"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        className="hud-input px-3 py-2 flex-1"
-                        autoFocus
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleSaveEdit(user)}
-                          disabled={isBusy}
-                          className="hud-btn px-3 py-1 text-xs"
-                        >
-                          {isBusy ? "..." : "Save"}
-                        </button>
-                        <button
-                          onClick={handleCancelEdit}
-                          className="hud-btn px-3 py-1 text-xs"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div>
-                        <div className="hud-title text-base">{user.username}</div>
-                        <div
-                          className="hud-label mt-1"
-                          style={{ color: isAdmin ? 'var(--color-amber)' : 'var(--color-cyan-dim)' }}
-                        >
-                          {user.role}
+                return (
+                  <li
+                    key={user.id}
+                    className="hud-panel p-3 md:p-4 flex items-center justify-between gap-3"
+                  >
+                    {isEditing ? (
+                      <>
+                        <input
+                          type="text"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSaveEdit(user)
+                            if (e.key === "Escape") handleCancelEdit()
+                          }}
+                          className="hud-input px-3 py-2 flex-1 min-w-0"
+                          aria-label="Username"
+                          autoFocus
+                        />
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            onClick={() => handleSaveEdit(user)}
+                            disabled={isBusy}
+                            className={actionBtn}
+                          >
+                            {isBusy ? "..." : (
+                              <>
+                                <Check size={14} className="md:hidden" aria-hidden="true" />
+                                <span className="sr-only md:not-sr-only">Save</span>
+                              </>
+                            )}
+                          </button>
+                          <button onClick={handleCancelEdit} className={actionBtn}>
+                            <X size={14} className="md:hidden" aria-hidden="true" />
+                            <span className="sr-only md:not-sr-only">Cancel</span>
+                          </button>
                         </div>
-                      </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex-1 min-w-0">
+                          <div className="hud-title text-sm md:text-base" style={{ overflowWrap: 'anywhere' }}>
+                            {user.username}
+                          </div>
+                          <div
+                            className="hud-label mt-1"
+                            style={{ color: isAdmin ? 'var(--color-amber)' : 'var(--color-cyan-dim)' }}
+                          >
+                            {user.role}
+                          </div>
+                        </div>
 
-                      <div className="flex gap-2 shrink-0">
-                        <button
-                          onClick={() => handleToggleRole(user)}
-                          disabled={isBusy || isSelf}
-                          title={isSelf ? "You can't change your own role" : undefined}
-                          className={`hud-btn px-3 py-1 text-xs ${isAdmin ? 'hud-btn-danger' : ''}`}
-                        >
-                          {isBusy ? "..." : isAdmin ? "Demote" : "Promote"}
-                        </button>
-                        <button
-                          onClick={() => handleEditClick(user)}
-                          className="hud-btn px-3 py-1 text-xs"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(user)}
-                          disabled={checkingUserId === user.id || isSelf}
-                          title={isSelf ? "You can't delete your own account" : undefined}
-                          className="hud-btn hud-btn-delete px-3 py-1 text-xs"
-                        >
-                          {checkingUserId === user.id ? "..." : "Delete"}
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            onClick={() => handleToggleRole(user)}
+                            disabled={isBusy || isSelf}
+                            title={isSelf ? "You can't change your own role" : roleLabel}
+                            className={`${actionBtn} ${isAdmin ? 'hud-btn-danger' : ''}`}
+                          >
+                            {isBusy ? "..." : (
+                              <>
+                                <RoleIcon size={14} className="md:hidden" aria-hidden="true" />
+                                <span className="sr-only md:not-sr-only">{roleLabel}</span>
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleEditClick(user)}
+                            title="Edit username"
+                            className={actionBtn}
+                          >
+                            <Pencil size={14} className="md:hidden" aria-hidden="true" />
+                            <span className="sr-only md:not-sr-only">Edit</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(user)}
+                            disabled={checkingUserId === user.id || isSelf}
+                            title={isSelf ? "You can't delete your own account" : "Delete user"}
+                            className={`${actionBtn} hud-btn-delete`}
+                          >
+                            {checkingUserId === user.id ? "..." : (
+                              <>
+                                <Trash2 size={14} className="md:hidden" aria-hidden="true" />
+                                <span className="sr-only md:not-sr-only">Delete</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+
+            {totalPages > 1 && (
+              <div className="hud-panel p-3 flex items-center justify-between gap-2 mt-4">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="hud-btn px-3 py-1 text-xs"
+                  aria-label="Previous page"
+                >
+                  ←<span className="hidden sm:inline"> Prev</span>
+                </button>
+                <span className="hud-label text-center">
+                  Page {page} of {totalPages}
+                  <span className="hidden sm:inline"> · {totalCount} total</span>
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="hud-btn px-3 py-1 text-xs"
+                  aria-label="Next page"
+                >
+                  <span className="hidden sm:inline">Next </span>→
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -221,18 +276,20 @@ function UsersPage({ token, currentUsername }) {
           style={{ background: 'rgba(3, 11, 15, 0.85)' }}
         >
           <HudFrame
-              size="lg"
-              accent="var(--color-red)"
-              className="max-w-sm w-full"
-              bodyClassName="p-6"
-              style={{ zIndex: 10 }}
+            size="lg"
+            accent="var(--color-red)"
+            className="max-w-sm w-full"
+            bodyClassName="p-6"
+            style={{ zIndex: 10 }}
           >
             <div className="flex items-center gap-2 mb-3">
               <span className="hud-status-dot" style={{ background: 'var(--color-amber)', boxShadow: '0 0 6px var(--color-amber)' }}></span>
               <span className="hud-label" style={{ color: 'var(--color-amber)' }}>Confirmation Required</span>
             </div>
 
-            <h2 className="hud-title hud-title-danger text-lg mb-3">Delete "{confirmTarget.user.username}"?</h2>
+            <h2 className="hud-title hud-title-danger text-lg mb-3" style={{ overflowWrap: 'anywhere' }}>
+              Delete "{confirmTarget.user.username}"?
+            </h2>
 
             {confirmTarget.projectCount > 0 ? (
               <p className="mb-6" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
@@ -248,16 +305,17 @@ function UsersPage({ token, currentUsername }) {
               </p>
             )}
 
-            <div className="flex gap-3">
+            {/* Stacked on narrow screens (Confirm on top), side by side from sm up */}
+            <div className="flex flex-col-reverse sm:flex-row gap-3">
               <button
                 onClick={() => setConfirmTarget(null)}
-                className="hud-btn flex-1 py-2"
+                className="hud-btn flex-auto whitespace-nowrap py-2"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="hud-btn hud-btn-delete flex-1 py-2"
+                className="hud-btn hud-btn-delete flex-auto whitespace-nowrap py-2"
               >
                 Confirm Delete
               </button>

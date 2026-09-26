@@ -1,6 +1,7 @@
 import { useState } from "react"
-import { FolderKanban, ListChecks, LogOut, Sun, Moon, ChevronDown, Users as UsersIcon } from "lucide-react"
+import { FolderKanban, ListChecks, LayoutDashboard, LogOut, Sun, Moon, ChevronDown, X, Users as UsersIcon } from "lucide-react"
 import { useTheme } from "../hooks/useTheme"
+import { useIsMobile } from "../hooks/useMediaQuery"
 
 function CollapsedTooltip({ label, color = 'var(--color-cyan)' }) {
   return (
@@ -107,7 +108,19 @@ function NavItem({
   )
 }
 
-function Sidebar({ username, role, onLogout, selectedProject, onGoHome, showUsers, onShowUsers }) {
+function Sidebar({
+  username,
+  role,
+  onLogout,
+  selectedProject,
+  currentView,
+  onShowDashboard,
+  onGoHome,
+  showUsers,
+  onShowUsers,
+  mobileOpen = false,
+  onCloseMobile,
+}) {
   const [collapsed, setCollapsed] = useState(false)
   const [projectsMenuOpen, setProjectsMenuOpen] = useState(true)
   const [themeHovered, setThemeHovered] = useState(false)
@@ -119,206 +132,256 @@ function Sidebar({ username, role, onLogout, selectedProject, onGoHome, showUser
   const { theme, toggleTheme } = useTheme()
   const isLight = theme === 'light'
 
+  const isMobile = useIsMobile()
+  // The drawer is always full width on mobile; collapsing is a desktop-only feature
+  const isCollapsed = !isMobile && collapsed
+  const hiddenOnMobile = isMobile && !mobileOpen
+
+  // Wraps a nav action so it also closes the drawer on mobile
+  const navigate = (action) => () => {
+    action && action()
+    if (isMobile && onCloseMobile) onCloseMobile()
+  }
+
   return (
-    <div
-      className="hud-panel flex flex-col justify-between p-4"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: collapsed ? '64px' : '240px',
-        height: '100vh',
-        zIndex: 40,
-        transition: 'width 0.25s ease',
-        overflow: 'visible',
-      }}
-    >
-      {/* Collapse toggle — tab attached to right edge */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        style={{
-          position: 'absolute',
-          top: '24px',
-          right: '-23px',
-          width: '22px',
-          height: '36px',
-          background: 'var(--color-panel)',
-          borderTop: '1px solid var(--color-cyan)',
-          borderRight: '1px solid var(--color-cyan)',
-          borderBottom: '1px solid var(--color-cyan)',
-          borderLeft: 'none',
-          borderRadius: '0 4px 4px 0',
-          color: 'var(--color-cyan)',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '1rem',
-          zIndex: 41,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {collapsed ? '›' : '‹'}
-      </button>
+    <>
+      {isMobile && mobileOpen && (
+        <div
+          onClick={onCloseMobile}
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 39,
+            background: 'rgba(3, 11, 15, 0.7)',
+          }}
+        />
+      )}
 
       <div
-        className="flex-1"
+        id="app-sidebar"
+        className="hud-panel flex flex-col justify-between p-4"
         style={{
-          overflowY: collapsed ? 'visible' : 'auto',
-          overflowX: collapsed ? 'visible' : 'hidden',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: isCollapsed ? '64px' : '240px',
+          height: '100dvh',
+          zIndex: 40,
+          transform: hiddenOnMobile ? 'translateX(-100%)' : 'none',
+          visibility: hiddenOnMobile ? 'hidden' : 'visible',
+          transition: 'width 0.25s ease, transform 0.25s ease, visibility 0.25s',
+          overflow: 'visible',
         }}
       >
-        <div className="flex items-center gap-2 mb-6" style={{ paddingLeft: '8px' }}>
-          <span className="hud-status-dot"></span>
-          <span
-            className="hud-label"
-            style={{ whiteSpace: 'nowrap', opacity: collapsed ? 0 : 1, transition: 'opacity 0.15s' }}
+        {isMobile ? (
+          /* Mobile: close button inside the drawer */
+          <button
+            onClick={onCloseMobile}
+            className="hud-btn p-1.5 flex items-center justify-center"
+            aria-label="Close navigation"
+            style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 41 }}
           >
-            Online
-          </span>
-        </div>
-
-        <h1
-          className="hud-title text-xl mb-8"
-          style={{ lineHeight: 1.3, whiteSpace: 'nowrap', opacity: collapsed ? 0 : 1, transition: 'opacity 0.15s' }}
-        >
-          TASK<br />MANAGER
-        </h1>
+            <X size={16} aria-hidden="true" />
+          </button>
+        ) : (
+          /* Desktop: collapse toggle — tab attached to right edge */
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            style={{
+              position: 'absolute',
+              top: '24px',
+              right: '-23px',
+              width: '22px',
+              height: '36px',
+              background: 'var(--color-panel)',
+              borderTop: '1px solid var(--color-cyan)',
+              borderRight: '1px solid var(--color-cyan)',
+              borderBottom: '1px solid var(--color-cyan)',
+              borderLeft: 'none',
+              borderRadius: '0 4px 4px 0',
+              color: 'var(--color-cyan)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '1rem',
+              zIndex: 41,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {collapsed ? '›' : '‹'}
+          </button>
+        )}
 
         <div
-          className="hud-label mb-3"
-          style={{ letterSpacing: '0.15em', whiteSpace: 'nowrap', opacity: collapsed ? 0 : 1, transition: 'opacity 0.15s' }}
+          className="flex-1"
+          style={{
+            overflowY: isCollapsed ? 'visible' : 'auto',
+            overflowX: isCollapsed ? 'visible' : 'hidden',
+          }}
         >
-          Navigation
-        </div>
+          <div className="flex items-center gap-2 mb-6" style={{ paddingLeft: '8px' }}>
+            <span className="hud-status-dot"></span>
+            <span
+              className="hud-label"
+              style={{ whiteSpace: 'nowrap', opacity: isCollapsed ? 0 : 1, transition: 'opacity 0.15s' }}
+            >
+              Online
+            </span>
+          </div>
 
-        <NavItem
-          icon={FolderKanban}
-          label="Projects"
-          active={!showUsers}
-          collapsed={collapsed}
-          onClick={onGoHome}
-          hasArrow={onTasksPage}
-          expanded={projectsMenuOpen}
-          onToggleExpand={() => setProjectsMenuOpen((o) => !o)}
-          attachedBottom={showTasks}
-        />
+          <h1
+            className="hud-title text-xl mb-8"
+            style={{ lineHeight: 1.3, whiteSpace: 'nowrap', opacity: isCollapsed ? 0 : 1, transition: 'opacity 0.15s' }}
+          >
+            TASK<br />MANAGER
+          </h1>
 
-        {showTasks && (
+          <div
+            className="hud-label mb-3"
+            style={{ letterSpacing: '0.15em', whiteSpace: 'nowrap', opacity: isCollapsed ? 0 : 1, transition: 'opacity 0.15s' }}
+          >
+            Navigation
+          </div>
+          
           <NavItem
-            icon={ListChecks}
-            label="Tasks"
+            icon={LayoutDashboard}
+            label="Dashboard"
+            active={currentView === 'dashboard' && !selectedProject}
+            collapsed={isCollapsed}
+            onClick={navigate(onShowDashboard)}
+          />
+
+          <NavItem
+            icon={FolderKanban}
+            label="Projects"
             active={!showUsers}
-            collapsed={collapsed}
-            onClick={() => {}}
-            indent={true}
-            attachedTop={true}
+            collapsed={isCollapsed}
+            onClick={navigate(onGoHome)}
+            hasArrow={onTasksPage}
+            expanded={projectsMenuOpen}
+            onToggleExpand={() => setProjectsMenuOpen((o) => !o)}
+            attachedBottom={showTasks}
           />
-        )}
 
-        {isAdmin && (
-          <NavItem
-            icon={UsersIcon}
-            label="Users"
-            active={showUsers}
-            collapsed={collapsed}
-            onClick={onShowUsers}
-          />
-        )}
-      </div>
+          {showTasks && (
+            <NavItem
+              icon={ListChecks}
+              label="Tasks"
+              active={!showUsers}
+              collapsed={isCollapsed}
+              onClick={navigate()}
+              indent={true}
+              attachedTop={true}
+            />
+          )}
 
-      <div>
-        <div
-          className="mb-4 pt-4 flex items-center justify-between"
-          style={{ borderTop: '1px solid color-mix(in srgb, var(--color-cyan) 15%, transparent)' }}
-        >
-          {!collapsed ? (
-            <>
-              <div>
-                <div className="hud-label mb-1" style={{ whiteSpace: 'nowrap' }}>Operator</div>
-                <div className="hud-title text-sm" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                  {username || "Unknown"}
+          {isAdmin && (
+            <NavItem
+              icon={UsersIcon}
+              label="Users"
+              active={showUsers}
+              collapsed={isCollapsed}
+              onClick={navigate(onShowUsers)}
+            />
+          )}
+        </div>
+
+        <div>
+          <div
+            className="mb-4 pt-4 flex items-center justify-between"
+            style={{ borderTop: '1px solid color-mix(in srgb, var(--color-cyan) 15%, transparent)' }}
+          >
+            {!isCollapsed ? (
+              <>
+                <div>
+                  <div className="hud-label mb-1" style={{ whiteSpace: 'nowrap' }}>Operator</div>
+                  <div className="hud-title text-sm" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                    {username || "Unknown"}
+                  </div>
                 </div>
-              </div>
 
-              {isAdmin && (
-                <span
-                  className="hud-label"
-                  style={{ color: 'var(--color-amber)', whiteSpace: 'nowrap' }}
-                >
-                  Admin
-                </span>
-              )}
-            </>
+                {isAdmin && (
+                  <span
+                    className="hud-label"
+                    style={{ color: 'var(--color-amber)', whiteSpace: 'nowrap' }}
+                  >
+                    Admin
+                  </span>
+                )}
+              </>
+            ) : (
+              <div
+                className="relative flex justify-center w-full"
+                onMouseEnter={() => setOperatorHovered(true)}
+                onMouseLeave={() => setOperatorHovered(false)}
+              >
+                <span className="hud-status-dot"></span>
+                {operatorHovered && (
+                  <CollapsedTooltip
+                    label={isAdmin ? `${username || 'Unknown'} (Admin)` : (username || 'Unknown')}
+                    color={isAdmin ? 'var(--color-amber)' : 'var(--color-cyan)'}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Theme toggle */}
+          {!isCollapsed ? (
+            <button
+              onClick={toggleTheme}
+              className="hud-btn w-full py-2 text-sm mb-2 flex items-center justify-center gap-2"
+            >
+              {isLight ? <Moon size={14} /> : <Sun size={14} />}
+              {isLight ? 'Dark Mode' : 'Light Mode'}
+            </button>
           ) : (
             <div
-              className="relative flex justify-center w-full"
-              onMouseEnter={() => setOperatorHovered(true)}
-              onMouseLeave={() => setOperatorHovered(false)}
+              className="relative flex justify-center mb-2"
+              onMouseEnter={() => setThemeHovered(true)}
+              onMouseLeave={() => setThemeHovered(false)}
             >
-              <span className="hud-status-dot"></span>
-              {operatorHovered && (
-                <CollapsedTooltip
-                  label={isAdmin ? `${username || 'Unknown'} (Admin)` : (username || 'Unknown')}
-                  color={isAdmin ? 'var(--color-amber)' : 'var(--color-cyan)'}
-                />
+              <button
+                onClick={toggleTheme}
+                className="hud-btn py-2 w-full flex items-center justify-center"
+              >
+                {isLight ? <Moon size={16} /> : <Sun size={16} />}
+              </button>
+              {themeHovered && (
+                <CollapsedTooltip label={isLight ? 'Switch to Dark' : 'Switch to Light'} />
+              )}
+            </div>
+          )}
+
+          {!isCollapsed ? (
+            <button
+              onClick={onLogout}
+              className="hud-btn hud-btn-danger w-full py-2 text-sm"
+            >
+              Logout
+            </button>
+          ) : (
+            <div
+              className="relative flex justify-center"
+              onMouseEnter={() => setLogoutHovered(true)}
+              onMouseLeave={() => setLogoutHovered(false)}
+            >
+              <button
+                onClick={onLogout}
+                className="hud-btn hud-btn-danger py-2 w-full flex items-center justify-center"
+              >
+                <LogOut size={16} />
+              </button>
+              {logoutHovered && (
+                <CollapsedTooltip label="Logout" color="var(--color-amber)" />
               )}
             </div>
           )}
         </div>
-
-        {/* Theme toggle */}
-        {!collapsed ? (
-          <button
-            onClick={toggleTheme}
-            className="hud-btn w-full py-2 text-sm mb-2 flex items-center justify-center gap-2"
-          >
-            {isLight ? <Moon size={14} /> : <Sun size={14} />}
-            {isLight ? 'Dark Mode' : 'Light Mode'}
-          </button>
-        ) : (
-          <div
-            className="relative flex justify-center mb-2"
-            onMouseEnter={() => setThemeHovered(true)}
-            onMouseLeave={() => setThemeHovered(false)}
-          >
-            <button
-              onClick={toggleTheme}
-              className="hud-btn py-2 w-full flex items-center justify-center"
-            >
-              {isLight ? <Moon size={16} /> : <Sun size={16} />}
-            </button>
-            {themeHovered && (
-              <CollapsedTooltip label={isLight ? 'Switch to Dark' : 'Switch to Light'} />
-            )}
-          </div>
-        )}
-
-        {!collapsed ? (
-          <button
-            onClick={onLogout}
-            className="hud-btn hud-btn-danger w-full py-2 text-sm"
-          >
-            Logout
-          </button>
-        ) : (
-          <div
-            className="relative flex justify-center"
-            onMouseEnter={() => setLogoutHovered(true)}
-            onMouseLeave={() => setLogoutHovered(false)}
-          >
-            <button
-              onClick={onLogout}
-              className="hud-btn hud-btn-danger py-2 w-full flex items-center justify-center"
-            >
-              <LogOut size={16} />
-            </button>
-            {logoutHovered && (
-              <CollapsedTooltip label="Logout" color="var(--color-amber)" />
-            )}
-          </div>
-        )}
       </div>
-    </div>
+    </>
   )
 }
 
