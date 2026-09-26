@@ -9,6 +9,7 @@ import Tooltip from "./Tooltip.jsx"
 import HudFrame from "./HudFrame.jsx"
 import TickFrame from "./TickFrame.jsx"
 import { useIsMobile } from "../hooks/useMediaQuery"
+import { useProjectChannel, useRealtimeEvent, useDebouncedCallback } from "../hooks/useRealtime"
 
 const PRIORITY_META = {
   High: { color: "#ffb020", label: "High", icon: SignalHigh },
@@ -47,9 +48,31 @@ function TaskList({ token, role, project, onBack }) {
     loadTasks()
   }, [page, filterPriority, sortBy])
 
-  async function loadTasks() {
+    // --- Realtime ---
+  const refreshTasks = useDebouncedCallback(() => loadTasks({ silent: true }))
+
+  useProjectChannel(project.id)
+
+  useRealtimeEvent("TaskChanged", (e) => {
+    if (e.projectId === project.id) refreshTasks()
+  })
+
+  useRealtimeEvent("ProjectChanged", (e) => {
+    if (e.projectId !== project.id) return
+    if (e.change === "deleted") {
+      onBack() // the project no longer exists
+      return
+    }
+    if (e.change === "completed") setIsCompleted(true)
+    if (e.change === "reopened") setIsCompleted(false)
+    refreshTasks()
+  })
+
+  useRealtimeEvent("Resync", refreshTasks)
+
+  async function loadTasks({ silent = false } = {}) {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       const data = await getTasks(token, project.id, page, 10, filterPriority, sortBy)
       setTasks(data.items)
       setTotalPages(data.totalPages)

@@ -1,4 +1,4 @@
-const API_BASE = "https://task-manager-api-1-iusg.onrender.com/api"
+export const API_BASE = "https://task-manager-api-1-iusg.onrender.com/api"
 
 // --- Session handling ---------------------------------------------------
 

@@ -4,6 +4,7 @@ import {
   SignalLow, SignalMedium, SignalHigh,
 } from "lucide-react"
 import { getDashboard } from "../api"
+import { useRealtimeEvent, useDebouncedCallback } from "../hooks/useRealtime"
 
 const PRIORITY_META = {
   High: { color: "#ffb020", icon: SignalHigh },
@@ -158,6 +159,12 @@ function DashboardPage({ token, role, onOpenProject, onShowProjects }) {
   useEffect(() => {
     loadDashboard()
   }, [])
+
+    // --- Realtime --- (the refresh icon spins briefly as a "live update" cue)
+  const refreshDashboard = useDebouncedCallback(() => loadDashboard())
+  useRealtimeEvent("TaskChanged", refreshDashboard)
+  useRealtimeEvent("ProjectChanged", refreshDashboard)
+  useRealtimeEvent("Resync", refreshDashboard)
 
   async function loadDashboard() {
     try {

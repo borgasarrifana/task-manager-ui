@@ -2,6 +2,7 @@ import { useState } from "react"
 import { FolderKanban, ListChecks, LayoutDashboard, LogOut, Sun, Moon, ChevronDown, X, Users as UsersIcon } from "lucide-react"
 import { useTheme } from "../hooks/useTheme"
 import { useIsMobile } from "../hooks/useMediaQuery"
+import { useRealtimeStatus } from "../hooks/useRealtime"
 
 function CollapsedTooltip({ label, color = 'var(--color-cyan)' }) {
   return (
@@ -108,6 +109,13 @@ function NavItem({
   )
 }
 
+const REALTIME_STATUS = {
+  online: { label: 'Online', color: 'var(--color-cyan)' },
+  connecting: { label: 'Linking', color: 'var(--color-cyan-dim)' },
+  reconnecting: { label: 'Reconnecting', color: 'var(--color-amber)' },
+  offline: { label: 'Offline', color: 'var(--color-red)' },
+}
+
 function Sidebar({
   username,
   role,
@@ -131,6 +139,8 @@ function Sidebar({
   const isAdmin = role === 'Admin'
   const { theme, toggleTheme } = useTheme()
   const isLight = theme === 'light'
+  const realtimeStatus = useRealtimeStatus()
+  const statusMeta = REALTIME_STATUS[realtimeStatus]
 
   const isMobile = useIsMobile()
   // The drawer is always full width on mobile; collapsing is a desktop-only feature
@@ -221,13 +231,31 @@ function Sidebar({
             overflowX: isCollapsed ? 'visible' : 'hidden',
           }}
         >
-          <div className="flex items-center gap-2 mb-6" style={{ paddingLeft: '8px' }}>
-            <span className="hud-status-dot"></span>
+                    <div
+            className="flex items-center gap-2 mb-6"
+            style={{ paddingLeft: '8px' }}
+            role="status"
+            aria-live="polite"
+            title={`Live updates: ${statusMeta.label}`}
+          >
+            <span
+              className="hud-status-dot"
+              style={{
+                background: statusMeta.color,
+                boxShadow: `0 0 6px ${statusMeta.color}`,
+                animation: realtimeStatus === 'offline' ? 'none' : undefined,
+              }}
+            ></span>
             <span
               className="hud-label"
-              style={{ whiteSpace: 'nowrap', opacity: isCollapsed ? 0 : 1, transition: 'opacity 0.15s' }}
+              style={{
+                whiteSpace: 'nowrap',
+                opacity: isCollapsed ? 0 : 1,
+                transition: 'opacity 0.15s',
+                color: statusMeta.color,
+              }}
             >
-              Online
+              {statusMeta.label}
             </span>
           </div>
 

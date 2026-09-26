@@ -8,6 +8,7 @@ import UsersPage from "./components/UsersPage"
 import Sidebar from "./components/Sidebar"
 import { useIsMobile } from "./hooks/useMediaQuery"
 import { refreshAccessToken, logout as apiLogout, setSessionHandlers } from "./api"
+import { startRealtime, stopRealtime } from "./realtime"
 
 function App() {
   const [token, setToken] = useState(null)
@@ -111,6 +112,15 @@ function App() {
     setSelectedProject(null)
     setView(nextView)
   }
+
+  // One realtime connection per logged-in session.
+  // Depends on "is logged in", not the token itself, so token refreshes don't reconnect.
+  const isAuthenticated = !!token
+  useEffect(() => {
+    if (!isAuthenticated) return
+    startRealtime()
+    return () => stopRealtime()
+  }, [isAuthenticated])
 
   if (restoring) {
     return (

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { Plus, Trash2 } from "lucide-react"
 import { getProjects, createProject, getTasks, deleteProject } from "../api"
 import HudFrame from "./HudFrame.jsx"
+import { useRealtimeEvent, useDebouncedCallback } from "../hooks/useRealtime"
 
 function ProjectList({ token, role, onSelectProject }) {
   const [projects, setProjects] = useState([])
@@ -19,9 +20,14 @@ function ProjectList({ token, role, onSelectProject }) {
     loadProjects()
   }, [page])
 
-  async function loadProjects() {
+    // --- Realtime ---
+  const refreshProjects = useDebouncedCallback(() => loadProjects({ silent: true }))
+  useRealtimeEvent("ProjectChanged", refreshProjects)
+  useRealtimeEvent("Resync", refreshProjects)
+
+  async function loadProjects({ silent = false } = {}) {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       const data = await getProjects(token, page)
       setProjects(data.items)
       setTotalPages(data.totalPages)
