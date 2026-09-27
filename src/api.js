@@ -56,11 +56,11 @@ async function authorizedFetch(url, options, token) {
 
 // --- Auth -----------------------------------------------------------------
 
-export async function register(username, password) {
+export async function register(username, email, password) {
   const res = await fetch(`${API_BASE}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username, email, password }),
   })
   if (!res.ok) {
     const text = await res.text()
@@ -98,6 +98,31 @@ export async function logout(refreshToken) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refreshToken }),
   })
+}
+
+// --- Account --------------------------------------------------------------
+
+export async function getAccount(token) {
+  const res = await authorizedFetch(`${API_BASE}/account`, {}, token)
+  if (!res.ok) throw new Error("Failed to load account")
+  return res.json()
+}
+
+export async function updateAccount(token, { email, emailRemindersEnabled }) {
+  const res = await authorizedFetch(
+    `${API_BASE}/account`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, emailRemindersEnabled }),
+    },
+    token
+  )
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || "Failed to update account")
+  }
+  return res.json()
 }
 
 // --- Dashboard ---------------------------------------------------------

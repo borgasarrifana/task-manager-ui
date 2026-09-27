@@ -9,6 +9,7 @@ import Sidebar from "./components/Sidebar"
 import { useIsMobile } from "./hooks/useMediaQuery"
 import { refreshAccessToken, logout as apiLogout, setSessionHandlers } from "./api"
 import { startRealtime, stopRealtime } from "./realtime"
+import AccountPage from "./components/AccountPage"
 
 function App() {
   const [token, setToken] = useState(null)
@@ -145,6 +146,9 @@ function App() {
         />
       )
     }
+    if (view === "account") {
+      return <AccountPage token={token} />
+    }
     if (view === "users") {
       return <UsersPage token={token} currentUsername={username} />
     }
@@ -197,6 +201,7 @@ function App() {
         onShowUsers={() => showView("users")}
         mobileOpen={mobileNavOpen}
         onCloseMobile={() => setMobileNavOpen(false)}
+        onShowAccount={() => showView("account")}
       />
 
       <main className="pt-14 md:pt-0">{renderPage()}</main>

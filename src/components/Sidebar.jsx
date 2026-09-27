@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { FolderKanban, ListChecks, LayoutDashboard, LogOut, Sun, Moon, ChevronDown, X, Users as UsersIcon } from "lucide-react"
+import { FolderKanban, ListChecks, LayoutDashboard, LogOut, Sun, Moon, ChevronDown, X, UserCog, Users as UsersIcon } from "lucide-react"
 import { useTheme } from "../hooks/useTheme"
 import { useIsMobile } from "../hooks/useMediaQuery"
 import { useRealtimeStatus } from "../hooks/useRealtime"
@@ -126,6 +126,7 @@ function Sidebar({
   onGoHome,
   showUsers,
   onShowUsers,
+  onShowAccount,
   mobileOpen = false,
   onCloseMobile,
 }) {
@@ -314,6 +315,14 @@ function Sidebar({
               onClick={navigate(onShowUsers)}
             />
           )}
+
+          <NavItem
+            icon={UserCog}
+            label="Account"
+            active={currentView === 'account' && !selectedProject}
+            collapsed={isCollapsed}
+            onClick={navigate(onShowAccount)}
+          />
         </div>
 
         <div>

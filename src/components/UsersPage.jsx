@@ -197,6 +197,21 @@ function UsersPage({ token, currentUsername }) {
                           >
                             {user.role}
                           </div>
+                                                    <div
+                            className="hud-label mt-1"
+                            style={{ textTransform: 'none', overflowWrap: 'anywhere' }}
+                          >
+                            {user.email ? (
+                              <>
+                                {user.email}{" "}
+                                <span style={{ color: user.emailConfirmed ? 'var(--color-green)' : 'var(--color-amber)' }}>
+                                  {user.emailConfirmed ? "✓ verified" : "· unverified"}
+                                </span>
+                              </>
+                            ) : (
+                              "No email"
+                            )}
+                          </div>
                         </div>
 
                         <div className="flex gap-2 shrink-0">
