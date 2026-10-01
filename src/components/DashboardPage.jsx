@@ -61,7 +61,7 @@ function CompletionRing({ percent, done, total }) {
     <div className="flex flex-col items-center gap-2">
       <svg
         viewBox="0 0 180 180"
-        className="w-40 h-40 md:w-44 md:h-44"
+        className="size-60 max-w-full md:size-44"
         role="img"
         aria-label={`${percent}% of tasks complete`}
       >
