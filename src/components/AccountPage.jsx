@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react"
 import { ShieldCheck, ShieldAlert } from "lucide-react"
-import { getAccount, updateAccount } from "../api"
 import { getAccount, updateAccount, resendVerification } from "../api"
 
 function AccountPage({ token }) {
