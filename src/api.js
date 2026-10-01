@@ -125,6 +125,31 @@ export async function updateAccount(token, { email, emailRemindersEnabled }) {
   return res.json()
 }
 
+export async function resendVerification(token) {
+  const res = await authorizedFetch(
+    `${API_BASE}/account/resend-verification`,
+    { method: "POST" },
+    token
+  )
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || "Failed to send verification email")
+  }
+}
+
+// Anonymous — the link may be opened on a device that isn't logged in
+export async function verifyEmail(verificationToken) {
+  const res = await fetch(`${API_BASE}/account/verify-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: verificationToken }),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || "Verification failed")
+  }
+}
+
 // --- Dashboard ---------------------------------------------------------
 
 export async function getDashboard(token) {

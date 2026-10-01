@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { ShieldCheck, ShieldAlert } from "lucide-react"
 import { getAccount, updateAccount } from "../api"
+import { getAccount, updateAccount, resendVerification } from "../api"
 
 function AccountPage({ token }) {
   const [account, setAccount] = useState(null)
@@ -10,6 +11,8 @@ function AccountPage({ token }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
   const [saved, setSaved] = useState(false)
+  const [notice, setNotice] = useState("")
+  const [resending, setResending] = useState(false)
 
   useEffect(() => {
     loadAccount()
@@ -50,10 +53,25 @@ function AccountPage({ token }) {
       })
       applyAccount(data)
       setSaved(true)
+      setNotice(emailChanged && data.email ? `Verification email sent to ${data.email}.` : "")
     } catch (err) {
       setError(err.message)
     } finally {
       setSaving(false)
+    }
+  }
+
+    async function handleResend() {
+    setError("")
+    setNotice("")
+    setResending(true)
+    try {
+      await resendVerification(token)
+      setNotice(`Verification email sent to ${account.email}.`)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setResending(false)
     }
   }
 
@@ -114,20 +132,35 @@ function AccountPage({ token }) {
                 placeholder="NOT SET"
               />
 
-              {account.email && !emailChanged && (
-                <div
-                  className="hud-label mt-2 flex items-center gap-1.5"
-                  style={{ color: account.emailConfirmed ? 'var(--color-green)' : 'var(--color-amber)' }}
-                >
-                  {account.emailConfirmed ? (
-                    <><ShieldCheck size={14} aria-hidden="true" /> Verified</>
-                  ) : (
-                    <><ShieldAlert size={14} aria-hidden="true" /> Not verified yet</>
+                            {account.email && !emailChanged && (
+                <div className="flex flex-wrap items-center gap-3 mt-2">
+                  <span
+                    className="hud-label flex items-center gap-1.5"
+                    style={{ color: account.emailConfirmed ? 'var(--color-green)' : 'var(--color-amber)' }}
+                  >
+                    {account.emailConfirmed ? (
+                      <><ShieldCheck size={14} aria-hidden="true" /> Verified</>
+                    ) : (
+                      <><ShieldAlert size={14} aria-hidden="true" /> Not verified yet</>
+                    )}
+                  </span>
+                  {!account.emailConfirmed && (
+                    <button
+                      type="button"
+                      onClick={handleResend}
+                      disabled={resending}
+                      className="hud-label underline"
+                      style={{ color: 'var(--color-cyan)' }}
+                    >
+                      {resending ? "Sending..." : "Resend verification email"}
+                    </button>
                   )}
                 </div>
               )}
-              {emailChanged && hasEmail && (
-                <div className="hud-label mt-2">A changed address will need to be verified again.</div>
+              {notice && (
+                <div className="hud-label mt-2" style={{ color: 'var(--color-green)', textTransform: 'none' }} role="status">
+                  {notice}
+                </div>
               )}
             </div>
 

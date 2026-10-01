@@ -20,6 +20,10 @@ function App() {
   const [restoring, setRestoring] = useState(true)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const isMobile = useIsMobile()
+    // A verification link opens the app as /?verify-email=<token>
+  const [verifyToken, setVerifyToken] = useState(
+    () => new URLSearchParams(window.location.search).get("verify-email")
+  )
 
   useEffect(() => {
     setSessionHandlers({
@@ -122,6 +126,20 @@ function App() {
     startRealtime()
     return () => stopRealtime()
   }, [isAuthenticated])
+
+    if (verifyToken) {
+    return (
+      <VerifyEmailPage
+        verificationToken={verifyToken}
+        onDone={() => {
+          // Remove the token from the address bar and continue into the app
+          window.history.replaceState({}, "", window.location.pathname)
+          setVerifyToken(null)
+          setView("account")
+        }}
+      />
+    )
+  }
 
   if (restoring) {
     return (
