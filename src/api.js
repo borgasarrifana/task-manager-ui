@@ -108,13 +108,13 @@ export async function getAccount(token) {
   return res.json()
 }
 
-export async function updateAccount(token, { email, emailRemindersEnabled }) {
+export async function updateAccount(token, settings) {
   const res = await authorizedFetch(
     `${API_BASE}/account`,
     {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, emailRemindersEnabled }),
+      body: JSON.stringify(settings),
     },
     token
   )
