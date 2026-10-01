@@ -10,6 +10,7 @@ import { useIsMobile } from "./hooks/useMediaQuery"
 import { refreshAccessToken, logout as apiLogout, setSessionHandlers } from "./api"
 import { startRealtime, stopRealtime } from "./realtime"
 import AccountPage from "./components/AccountPage"
+import VerifyEmailPage from "./components/VerifyEmailPage"
 
 function App() {
   const [token, setToken] = useState(null)
